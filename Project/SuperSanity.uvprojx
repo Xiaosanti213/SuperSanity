@@ -470,6 +470,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\stm32f10x_it.c</FilePath>
             </File>
+            <File>
+              <FileName>app_cfg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\app_cfg.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

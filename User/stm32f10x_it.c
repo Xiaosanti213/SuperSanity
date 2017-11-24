@@ -23,6 +23,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
+#include "ucos_ii.h"
+
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -122,10 +124,11 @@ void DebugMon_Handler(void)
   * @brief  This function handles PendSVC exception.
   * @param  None
   * @retval None
+  * –Ë“™∆¡±Œ±‹√‚∫Õos_cpu_a.asm≥ÂÕª
   */
-void PendSV_Handler(void)
-{
-}
+//void PendSV_Handler(void)
+//{
+//}
 
 /**
   * @brief  This function handles SysTick Handler.
@@ -134,6 +137,9 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+	OSIntEnter();
+	OSTimeTick();
+	OSIntExit();
 }
 
 /******************************************************************************/

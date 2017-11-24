@@ -34,6 +34,8 @@ void spi_nrf_init(void)
 	// 不配置亦不传输
 	RC_SPI_CE_LOW_FUN();
 	RC_SPI_NSS_HIGH_FUN();
+	
+	spi_nrf_check();
 }
 
 
@@ -57,7 +59,7 @@ uint8_t spi_nrf_check(void)
 	 //uint8_t status;
    uint8_t check_data[5] = {0x14, 0x14, 0x14, 0x14, 0x14};
 	 uint8_t check_read[5] = {0x07, 0x07, 0x07, 0x07, 0x07};
-	 //校验数据
+	 //校验数据,暂时返回值全是0x14而无法得到0x07，之后查阅数据手册更换寄存器
 	 
 	 spi_send_byte(RC_SPI, TX_ADDR);
 	 // 选择准备写入的寄存器
@@ -71,11 +73,12 @@ uint8_t spi_nrf_check(void)
 	 
    for(index = 0; index<5; index++)
 	 {
-		  printf("\r\n读出TX寄存器数据为：%8d", check_read[index]);
+		  //printf("\r\n读出TX寄存器数据为：%8d", check_read[index]);
 			//break;
 	 }
 	 if(index == 5)
 	 {
+		  printf("RC initialized successfully!\n");
 	    return SUCCESS;
 	 }
 	 return ERROR;

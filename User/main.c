@@ -5,6 +5,7 @@
 #include "mpu6050.h"
 #include "nRF24L01.h"
 #include "debug.h" 
+#include "app_cfg.h"
 
 #include "api_usart.h"
 #include "board_config.h" 
@@ -13,16 +14,23 @@
 #include <stdio.h>
 
 
+#include "ucos_ii.h"
+
+
 int main()
 {
-
 	//char*	 string_to_send = "Hello world";
-	short  data_to_send[] = {1,2,3,4}; 
-
+	//short  data_to_send[] = {1,2,3,4}; 	
+	OSInit();
+	gpio_clk_config();//调试用	
+	debug_usart_init();	
+	os_tick_init();
+  status_led_gpio_config();
+	
+	
 	//uint16_t* acc, *gyro, *temp;
 	
-	gpio_clk_config();//调试用
-	status_led_gpio_config();
+	
 	
 	// STATUS_LED_ON;
 	
@@ -40,19 +48,17 @@ int main()
   // i2c_mpu6050_read_gyro( gyro);
   // i2c_mpu6050_read_temp( temp);
   // i2c_mpu6050_delay();
-	
-	debug_usart_init();
-  debug_usart_check();		
+		
 	
 	
 	spi_nrf_init();
-	spi_nrf_check();
 	
-	printf("\r\n加速度： %8d%8d%8d    ",data_to_send[0],data_to_send[1],data_to_send[2]);
+	//printf("\r\n加速度： %8d%8d%8d    ",data_to_send[0],data_to_send[1],data_to_send[2]);
 	while(1)
 	{
 		//usart_debug_send_data(data_to_send, sizeof(data_to_send));
 		//printf("\r\n加速度： %8d%8d%8d		",data_to_send[0],data_to_send[1],data_to_send[2]);	
+		STATUS_LED_ON;
 	}
 
 }

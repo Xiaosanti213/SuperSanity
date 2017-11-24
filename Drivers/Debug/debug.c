@@ -33,8 +33,10 @@
 void debug_usart_init(void)
 {
 	
-	gpio_clk_config();// 调试用
+	//gpio_clk_config();// 调试用
 	usb_config();
+	
+	debug_usart_check();
 }
  
 
