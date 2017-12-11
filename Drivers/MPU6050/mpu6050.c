@@ -9,12 +9,25 @@
  
 #include "mpu6050.h"
 #include "board_config.h"
-#include "api_i2c.h"
+#include "hmc5883l.h" 
+
+#include <stdio.h>
 
  
  
- 
- 
+static void i2c_mpu6050_delay(void); 
+static uint8_t i2c_send_data_single(uint8_t reg, uint8_t byte);
+static uint8_t i2c_send_data(uint8_t reg, uint8_t* buffer, u8 num);
+static uint8_t i2c_receive_data(u8 reg, uint8_t* byte_add, uint8_t num);
+static uint8_t i2c_timeout_usercallback(uint8_t error_code);
+
+#define I2C_WAIT_TIMEOUT		((u32)0x1000)
+
+
+
+
+
+
 /**
  *  名称: i2c_mpu6050_init
  *
@@ -24,25 +37,20 @@
 void i2c_mpu6050_init(void)
 {
 	
-	gpio_clk_config();//调试用
+	//gpio_clk_config();//调试用
 	
-  tim_config();
+  mpu6050_config();//配置GPIO和I2C外设
 	
-  i2c_mpu6050_delay();
+  i2c_mpu6050_delay();//上电后延时防止数据出错
 	
-	i2c_mpu6050_write_reg(MPU6050_RA_PWR_MGMT_1, 0x00);	     																				//解除休眠状态
-	i2c_mpu6050_write_reg(MPU6050_RA_SMPLRT_DIV , MPU6050_SMPLRT_DEV_GY1k);	    										//陀螺仪采样率1kHz
-	i2c_mpu6050_write_reg(MPU6050_RA_CONFIG , MPU6050_EXT_SYNC_ACCEL_YOUT_L);	  										//同步信号MPU6050_EXT_SYNC_ACCEL_YOUT_L
-	i2c_mpu6050_write_reg(MPU6050_RA_ACCEL_CONFIG , MPU6050_ACCEL_FS_2G|MPU6050_DHPF_5);	  				//配置加速度传感器工作在2G模式, Digital High Pass Filter？
-	i2c_mpu6050_write_reg(MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_FS_2000);     												//陀螺仪设置不自检，2000deg/s量程
-
+	i2c_send_data_single(MPU6050_RA_PWR_MGMT_1, 0x00);	     																				//解除休眠状态
+	i2c_send_data_single(MPU6050_RA_SMPLRT_DIV , MPU6050_SMPLRT_DEV_GY1k);	    								    //陀螺仪采样率1kHz
+	i2c_send_data_single(MPU6050_RA_CONFIG , MPU6050_EXT_SYNC_ACCEL_YOUT_L);	  								    //同步信号MPU6050_EXT_SYNC_ACCEL_YOUT_L
+	i2c_send_data_single(MPU6050_RA_ACCEL_CONFIG , MPU6050_ACCEL_FS_2G|MPU6050_DHPF_5);	  				  //配置加速度传感器工作在2G模式, Digital High Pass Filter？
+	i2c_send_data_single(MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_FS_2000);     												//陀螺仪设置不自检，2000deg/s量程
+  
+	
 }	
-
-
-
-
-
-
 
 
 
@@ -56,101 +64,14 @@ void i2c_mpu6050_init(void)
 
 uint8_t i2c_mpu6050_check(void)
 {
-	uint8_t value;
-	value = i2c_mpu6050_read_reg(MPU6050_RA_WHO_AM_I);
-	if(value == MPU6050_WHO_AM_I)
+	uint8_t value = 0;
+	i2c_receive_data(MPU6050_RA_WHO_AM_I, &value, 1);
+	printf("value = %d\n", value);
+	if(value == 0x68)
 	{
 		return SUCCESS;
 	}
 	return ERROR;
-}
-
-
-
-
-
-
-
-
-/**
- *
- * 名称：i2c_mpu6050_write_reg
- *
- * 描述：写入寄存器参数
- *
- */
-void i2c_mpu6050_write_reg(uint8_t reg, uint8_t value)
-{
-	
-	i2c_send_data(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, reg);
-	i2c_send_data(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, value);
-	
-}
-
-
-
-
-
-
-
-
-/**
- *
- * 名称：i2c_mpu6050_read_reg
- *
- * 描述：读出寄存器参数
- *
- */
-uint8_t i2c_mpu6050_read_reg(uint8_t reg)
-{
-
-	uint8_t value;
-	i2c_send_data(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, reg);
-	i2c_receive_data(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, value);
-	return value;
-
-}
-
-
-
-
-/**
- * 
- * 名称：i2c_mpu6050_write_buffer
- *
- * 描述：写入缓存的值
- *
- */
-void i2c_mpu6050_write_buffer(uint8_t reg, uint8_t* pbuffer, uint8_t num)
-{
-	uint8_t index;
-	for(index = 0; index < num; index++)
-	{
-		i2c_mpu6050_write_reg(reg, *pbuffer);
-		pbuffer++;
-	}
-}
-
-
-
-
-
-
-/**
- * 
- * 名称：i2c_mpu6050_read_buffer
- *
- * 描述：读取缓存的值
- *
- */
-void i2c_mpu6050_read_buffer(uint8_t reg, uint8_t* pbuffer, uint8_t num)
-{
-  uint8_t index;
-	for(index = 0;index < num; index++)
-	{
-	  *pbuffer = i2c_mpu6050_read_reg(reg);
-		pbuffer++;
-	}
 }
 
 
@@ -165,11 +86,11 @@ void i2c_mpu6050_read_buffer(uint8_t reg, uint8_t* pbuffer, uint8_t num)
  * 描述：读取加计数据 16348 LSB/g
  *
  */
-void i2c_mpu6050_read_acc(uint16_t* acc)
+void i2c_mpu6050_read_acc(int16_t* acc)
 {
 	
-	uint8_t* buffer;
-	i2c_mpu6050_read_buffer(MPU6050_RA_ACCEL_XOUT_H, buffer, 6);
+	uint8_t buffer[6];//认为这个数据有无符号无所谓，需要表达的才有意义
+	i2c_receive_data(MPU6050_RA_ACCEL_XOUT_H, buffer, 6);
 	//读取加计数据首地址
 	acc[0] = (buffer[0]<<8) | buffer[1];
 	acc[1] = (buffer[2]<<8) | buffer[3];
@@ -190,20 +111,17 @@ void i2c_mpu6050_read_acc(uint16_t* acc)
  * 描述：读取陀螺仪数据 16.4LSB
  *
  */
-void i2c_mpu6050_read_gyro(uint16_t* gyro)
+void i2c_mpu6050_read_gyro(int16_t* gyro)
 {
 	
-	uint8_t* buffer;
-	i2c_mpu6050_read_buffer(MPU6050_RA_GYRO_XOUT_H, buffer, 6);
+	uint8_t buffer[6];
+	i2c_receive_data(MPU6050_RA_GYRO_XOUT_H, buffer, 6);
 	//读取陀螺仪数据首地址
 	gyro[0] = (buffer[0]<<8) | buffer[1];
 	gyro[1] = (buffer[2]<<8) | buffer[3];
 	gyro[2] = (buffer[4]<<8) | buffer[5];
 	
 }
-
-
-
 
 
 
@@ -220,17 +138,16 @@ void i2c_mpu6050_read_gyro(uint16_t* gyro)
  * 描述：读取温度数据
  *
  */
-void i2c_mpu6050_read_temp(uint16_t* temp)
+void i2c_mpu6050_read_temp(float* temp)
 {
 	
-	uint8_t* buffer;
+	uint8_t buffer[2];
 	uint16_t temp_quant;
-	i2c_mpu6050_read_buffer(MPU6050_RA_TEMP_OUT_H, buffer, 2);
+	i2c_receive_data(MPU6050_RA_TEMP_OUT_H, buffer, 2);
 	//读取温度数据首地址
 	temp_quant = (buffer[0]<<8) | buffer[1];
 	//转换成摄氏温度
 	temp[0] = (double)temp_quant/340.0 + 36.53;
-	
 }
 
 
@@ -267,6 +184,53 @@ void i2c_mpu6050_delay(void)
 
 
 
+/**
+ *
+ * 名称：i2c_mpu6050_config_mag
+ *
+ * 描述：将MPU6050配置成bypass模式，配置磁罗盘参数
+ *
+ */
+
+void i2c_mpu6050_config_mag(void)
+{
+	 i2c_send_data_single(MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_EN_BIT);
+	 // MPU6050配置成I2C主机模式
+	 i2c_send_data_single(MPU6050_RA_I2C_MST_CTRL, MPU6050_CLOCK_DIV_258);
+	 // MPU6050和从机通讯速率258KHz最慢的了
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV4_CTRL, 0x13);
+	 // 配置采样磁罗盘50Hz
+	 i2c_send_data_single(MPU6050_RA_I2C_MST_DELAY_CTRL, MPU6050_DELAYCTRL_I2C_SLV0_DLY_EN_BIT);
+	 //外置传感器延迟使能
+	 
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_ADDR, MPU6050_I2C_SLV_RW_WRITE|HMC5883L_ADDRESS);
+   // 磁罗盘从机地址
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_REG, HMC5883L_RA_CONFIG_RA);
+   // 磁罗盘配置寄存器CRA
+   i2c_send_data_single(MPU6050_RA_I2C_SLV0_DO, (u8)(HMC5883L_MA_AVE_OUTPUT4|HMC5883L_DO_RATE_15));
+	 // 磁罗盘配置参数：连续4个平均值输出，数据更新速率15Hz
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_CTRL, MPU6050_I2C_SLV_EN|0x01);
+   // 先写入寄存器地址，再写入1个字节参数，EXT_SEN_R 0-1构成一个字MPU6050_RA_USER_CTRL 使能数据传输
+	
+	 
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_ADDR, MPU6050_I2C_SLV_RW_WRITE|HMC5883L_ADDRESS);
+   // 磁罗盘从机地址
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_REG, HMC5883L_RA_CONFIG_RB);
+   // 磁罗盘配置寄存器CRB 
+   i2c_send_data_single(MPU6050_RA_I2C_SLV0_DO, HMC5883L_GN_GAIN_330);
+	 // 设置增益大小：HMC5883L_GN_GAIN_230
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_CTRL, MPU6050_I2C_SLV_EN|0x01);
+	 
+	 
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_ADDR, MPU6050_I2C_SLV_RW_WRITE|HMC5883L_ADDRESS);
+   // 磁罗盘从机地址
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_REG, HMC5883L_RA_MODE_REG);
+   // 磁罗盘模式寄存器 
+   i2c_send_data_single(MPU6050_RA_I2C_SLV0_DO, HMC5883L_MD_CONT_MEAS);
+	 // 设置连续测量模式：HMC5883L_MD_CONT_MEAS
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_CTRL, MPU6050_I2C_SLV_EN|0x01);
+}
+	
 
 
 
@@ -274,6 +238,341 @@ void i2c_mpu6050_delay(void)
 
 
 
+/**
+ *
+ * 名称：i2c_mpu6050_init_mag
+ *
+ * 描述：将MPU6050配置成主机模式
+ *
+ */ 
+
+void i2c_mpu6050_init_mag(void)
+{
+   i2c_send_data_single(MPU6050_RA_USER_CTRL, MPU6050_USERCTRL_I2C_MST_EN_BIT);
+	 // MPU6050配置成I2C主机模式
+	 i2c_send_data_single(MPU6050_RA_I2C_MST_CTRL, MPU6050_CLOCK_DIV_258);
+	 // MPU6050和从机通讯速率258KHz
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_ADDR, MPU6050_I2C_SLV_RW_READ|HMC5883L_ADDRESS);
+   // 磁罗盘地址
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_REG, HMC5883L_RA_DATAOUT_X_MSB);
+	 // 磁罗盘配置寄存器地址
+	 i2c_send_data_single(MPU6050_RA_I2C_SLV0_CTRL, MPU6050_I2C_SLV_EN|0x06);
+	 // 使能数据传输，数据长度：3*2字节
+}
+
+ 
+
+
+
+
+/**
+ *
+ * 名称：i2c_mpu6050_read_mag
+ *
+ * 描述：读取磁罗盘数据
+ *
+ */ 
+void i2c_mpu6050_read_mag(int16_t* mag)
+{
+	uint8_t buffer[6];
+	// 使能数据传输之后，即可直接通过读取6050对应寄存器获得磁罗盘数据
+	i2c_receive_data(MPU6050_RA_EXT_SENS_DATA_00, buffer, 6);
+	// 地址MPU6050_RA_EXT_SENS_DATA_00: Reg73~96
+	printf("---:%d\n", buffer[2]);
+	mag[0] = (buffer[0]<<8) | buffer[1];   //magX-MB: 0x03 LB: 0x04
+	mag[1] = (buffer[2]<<8) | buffer[3];   //magZ-MB: 0x05 LB: 0x06
+	mag[2] = (buffer[4]<<8) | buffer[5];   //magY-MB: 0x07 LB: 0x08
+	printf("--:%d\n", mag[2]);
+}
+
+
+
+
+ 
+
+
+/**
+ * 名称: i2c_send_data
+ *
+ * 描述：MPU6050  Single-Byte Write Sequence单字节发送模式
+ *
+ */
+ 
+uint8_t i2c_send_data_single(uint8_t reg, uint8_t byte)
+{
+	/* Send STRAT condition */
+	uint32_t i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	
+	//while(I2C_GetFlagStatus(I2Cx, I2C_FLAG_BUSY)) // 检测是否正忙
+  //{
+  //  if((i2c_wait_timeout--) == 0) return i2c_timeout_usercallback(7);
+  // }
+
+	
+	I2C_GenerateSTART(MPU6050_I2C, ENABLE);//1 产生起始信号	
+	
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_MODE_SELECT))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(0);
+		}
+		i2c_wait_timeout--;
+	}
+	
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	
+	I2C_Send7bitAddress(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, I2C_Direction_Transmitter); //2 发送7位从机设备地址，并检查是否收到地址应答
+	
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(1);
+		}
+		i2c_wait_timeout--;
+	}
+	
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	
+	I2C_SendData(MPU6050_I2C, reg);		//3 发送一个字节地址(MPU6050 Single-Byte Write Sequence)
+	
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(2);
+		}
+		i2c_wait_timeout--;
+	}
+
+	I2C_SendData(MPU6050_I2C, byte);		//4 发送一个字节数据
+	
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
+	{
+	  if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(3);
+		}
+		i2c_wait_timeout--;
+	}
+		
+	I2C_GenerateSTOP (MPU6050_I2C, ENABLE); //5 停止信号
+	
+	return SUCCESS;
+}
+
+
+
+
+
+					
+/**
+ * 名称: i2c_send_data
+ *
+ * 描述：MPU6050  Burst Write Sequence多字节发送模式
+ *
+ */
+ 
+uint8_t i2c_send_data(uint8_t reg, uint8_t* buffer, u8 num)
+{
+	u8 index;
+	/* Send STRAT condition */
+	uint32_t i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	
+	//while(I2C_GetFlagStatus(I2Cx, I2C_FLAG_BUSY)) // 检测是否正忙
+  //{
+  //  if((i2c_wait_timeout--) == 0) return i2c_timeout_usercallback(0);
+  // }
+
+	
+	I2C_GenerateSTART(MPU6050_I2C, ENABLE);//1 产生起始信号	
+	
+	while(I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_MODE_SELECT) == ERROR)
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(1);
+		}
+		i2c_wait_timeout--;
+	}
+	
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	
+	I2C_Send7bitAddress(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, I2C_Direction_Transmitter); //2 发送7位从机设备地址，并检查是否收到地址应答
+	
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(2);
+		}
+		i2c_wait_timeout--;
+	}
+	
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	
+	I2C_SendData(MPU6050_I2C, reg);		//3 发送一个字节地址(MPU6050 Single-Byte Write Sequence)
+	
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(3);
+		}
+		i2c_wait_timeout--;
+	}
+
+	for(index = 0; index < num; index++)
+	{
+		I2C_SendData(MPU6050_I2C, *buffer);		//4 发送一个字节数据
+		while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(4);
+		}
+		i2c_wait_timeout--;
+		buffer++;//这块如果没有进入下一次循环是否会有危险
+	}
+	
+	I2C_GenerateSTOP (MPU6050_I2C, ENABLE); //5 停止信号
+	
+	return SUCCESS;
+}
+
+
+
+
+
+
+
+/**
+ * 名称: i2c_receive_data
+ *
+ * 描述：Burst Read Sequence 多字节接收模式
+ *
+ */
+
+uint8_t i2c_receive_data(u8 reg, uint8_t* buffer, uint8_t num)
+{
+	uint32_t i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	
+	while(I2C_GetFlagStatus(MPU6050_I2C, I2C_FLAG_BUSY)) // 检测是否正忙  
+  {
+    if((i2c_wait_timeout--) == 0) return i2c_timeout_usercallback(0);
+  }
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	I2C_GenerateSTART(MPU6050_I2C, ENABLE);  // 1 起始条件
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_MODE_SELECT))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(1);
+		}
+		i2c_wait_timeout--;
+	}
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT; 
+	I2C_Send7bitAddress(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, I2C_Direction_Transmitter); // 2 发送从机设备地址
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(2);
+		}
+		i2c_wait_timeout--;
+	}
+  /* Clear EV6 by setting again the PE bit */
+  I2C_Cmd(MPU6050_I2C, ENABLE);
+	
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT;	
+	I2C_SendData(MPU6050_I2C, reg);		//3 发送一个字节地址
+	
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(3);
+		}
+		i2c_wait_timeout--;
+	}
+	
+	
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
+	I2C_GenerateSTART(MPU6050_I2C, ENABLE);  // 4 Burst Read Sequence模式起始条件
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_MODE_SELECT))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(4);
+		}
+		i2c_wait_timeout--;
+	}
+	
+	i2c_wait_timeout = I2C_WAIT_TIMEOUT; 
+	I2C_Send7bitAddress(MPU6050_I2C, MPU6050_SLAVE_ADDRESS, I2C_Direction_Receiver); // 5 发送从机设备地址
+	while(!I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED))
+	{
+		if(i2c_wait_timeout == 0)
+		{
+			return i2c_timeout_usercallback(5);
+		}
+		i2c_wait_timeout--;
+	}
+	while(num)// 循环读取
+	{
+		if (num == 1)//读取最后一字节数据
+		{
+			I2C_AcknowledgeConfig(MPU6050_I2C, DISABLE);//最后一次收到的Nack
+			I2C_GenerateSTOP(MPU6050_I2C, ENABLE); 
+		}
+    if(I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_BYTE_RECEIVED))  
+    {      
+      /* Read a byte from the slave */
+      *buffer = I2C_ReceiveData(MPU6050_I2C);
+			//读取的内容，可使用引用变量或指针，但是保证读出数据
+
+      /* Point to the next location where the byte read will be saved */
+      buffer++; 
+      
+      /* Decrement the read bytes counter */
+      num--;        
+    }
+	}
+	I2C_AcknowledgeConfig(MPU6050_I2C, ENABLE);
+	return SUCCESS;//成功读出数据
+}
+	
+
+
+
+/**
+ * 名称: i2c_timeout_usercallback
+ *
+ * 描述：等待超时回调函数
+ *
+ */
+uint8_t i2c_timeout_usercallback(uint8_t error_code)
+{
+	printf("MPU6050 等待超时！errorCode =%d\n", error_code);
+	return 0;
+}
+
+
+
+//int fputc(int ch, FILE* f)
+//{
+//	USART_SendData(DEBUG_USART, (uint8_t) ch);
+//	while (USART_GetFlagStatus(DEBUG_USART, DEBUG_FLAG_TXE) == RESET
+	
+//}
 
 
 

@@ -109,12 +109,12 @@
         <DllOption>
           <SimDllName>SARMCM3.DLL</SimDllName>
           <SimDllArguments> -REMAP</SimDllArguments>
-          <SimDlgDll>DCM.DLL</SimDlgDll>
-          <SimDlgDllArguments>-pCM3</SimDlgDllArguments>
+          <SimDlgDll>DARMSTM.dll</SimDlgDll>
+          <SimDlgDllArguments>-pSTM32F103C8</SimDlgDllArguments>
           <TargetDllName>SARMCM3.DLL</TargetDllName>
           <TargetDllArguments></TargetDllArguments>
-          <TargetDlgDll>TCM.DLL</TargetDlgDll>
-          <TargetDlgDllArguments>-pCM3</TargetDlgDllArguments>
+          <TargetDlgDll>DARMSTM.dll</TargetDlgDll>
+          <TargetDlgDllArguments>-pSTM32F103C8</TargetDlgDllArguments>
         </DllOption>
         <DebugOption>
           <OPTHX>
@@ -369,7 +369,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\Drivers\boards\api;..\Drivers\boards\sanity-v1708;..\Drivers\nRF24L01;..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\User;..\Drivers\MPU6050;..\Drivers\Debug</IncludePath>
+              <IncludePath>..\Drivers\boards\api;..\Drivers\boards\sanity-v1708;..\Drivers\nRF24L01;..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\User;..\Drivers\MPU6050;..\Drivers\Debug;..\uCOS-II\Source;..\uCOS-II\Ports;..\Drivers\Motor;..\Drivers\MS5611</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -496,11 +496,6 @@
           <GroupName>BoardDrivers</GroupName>
           <Files>
             <File>
-              <FileName>api_spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\boards\api\api_spi.c</FilePath>
-            </File>
-            <File>
               <FileName>nRF24L01.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\nRF24L01\nRF24L01.c</FilePath>
@@ -516,11 +511,6 @@
               <FilePath>..\Drivers\MPU6050\mpu6050.c</FilePath>
             </File>
             <File>
-              <FileName>api_i2c.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\boards\api\api_i2c.c</FilePath>
-            </File>
-            <File>
               <FileName>api_usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\boards\api\api_usart.c</FilePath>
@@ -529,6 +519,96 @@
               <FileName>debug.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\Debug\debug.c</FilePath>
+            </File>
+            <File>
+              <FileName>motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Motor\motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>ms5611.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\MS5611\ms5611.c</FilePath>
+            </File>
+            <File>
+              <FileName>api_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\boards\api\api_spi.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Ports</GroupName>
+          <Files>
+            <File>
+              <FileName>os_cpu_c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Ports\os_cpu_c.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_dbg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Ports\os_dbg.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_cpu_a.asm</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\uCOS-II\Ports\os_cpu_a.asm</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Source</GroupName>
+          <Files>
+            <File>
+              <FileName>os_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_flag.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_flag.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_mbox.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_mbox.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_mem.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_mem.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_mutex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_mutex.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_q.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_q.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_sem.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_sem.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_time.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_time.c</FilePath>
+            </File>
+            <File>
+              <FileName>os_tmr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\uCOS-II\Source\os_tmr.c</FilePath>
             </File>
           </Files>
         </Group>

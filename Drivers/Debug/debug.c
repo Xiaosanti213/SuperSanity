@@ -34,8 +34,10 @@ void debug_usart_init(void)
 {
 	
 	//gpio_clk_config();// 调试用
+	//配置GPIO与串口外设
 	usb_config();
 	
+	//打印一串字符串看是否正常输出
 	debug_usart_check();
 }
  
@@ -53,7 +55,7 @@ void debug_usart_init(void)
 void debug_usart_check(void)
 {
 	
-	char check_data[]  = "\r\n debug-usart1 is working\n" ;
+	char check_data[]  = "Debug-usart1 is working\n" ;
 	//usart_debug_send_string(check_data, sizeof(check_data));
 	printf("%s", check_data);
 }

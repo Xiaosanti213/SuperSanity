@@ -59,8 +59,8 @@
 #define MPU6050_RA_I2C_SLV4_DO      0x33
 #define MPU6050_RA_I2C_SLV4_CTRL    0x34
 #define MPU6050_RA_I2C_SLV4_DI      0x35
-#define MPU6050_RA_I2C_MST_STATUS   0x36。
-#define MPU6050_RA_INT_PIN_CFG      0x37
+#define MPU6050_RA_I2C_MST_STATUS   0x36
+#define MPU6050_RA_INT_PIN_CFG      0x37    //中断引脚配置
 #define MPU6050_RA_INT_ENABLE       0x38
 #define MPU6050_RA_DMP_INT_STATUS   0x39
 #define MPU6050_RA_INT_STATUS       0x3A
@@ -310,12 +310,13 @@
 #define MPU6050_MOTION_MOT_ZPOS_BIT     2
 #define MPU6050_MOTION_MOT_ZRMOT_BIT    0
 
-#define MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT   7
-#define MPU6050_DELAYCTRL_I2C_SLV4_DLY_EN_BIT   4
-#define MPU6050_DELAYCTRL_I2C_SLV3_DLY_EN_BIT   3
-#define MPU6050_DELAYCTRL_I2C_SLV2_DLY_EN_BIT   2
-#define MPU6050_DELAYCTRL_I2C_SLV1_DLY_EN_BIT   1
-#define MPU6050_DELAYCTRL_I2C_SLV0_DLY_EN_BIT   0
+// Reg103(0x67): MPU6050_RA_I2C_MST_DELAY_CTRL
+#define MPU6050_DELAYCTRL_DELAY_ES_SHADOW_BIT   0x01<<7
+#define MPU6050_DELAYCTRL_I2C_SLV4_DLY_EN_BIT   0x01<<4
+#define MPU6050_DELAYCTRL_I2C_SLV3_DLY_EN_BIT   0x01<<3
+#define MPU6050_DELAYCTRL_I2C_SLV2_DLY_EN_BIT   0x01<<2
+#define MPU6050_DELAYCTRL_I2C_SLV1_DLY_EN_BIT   0x01<<1
+#define MPU6050_DELAYCTRL_I2C_SLV0_DLY_EN_BIT   0x01<<0
 
 #define MPU6050_PATHRESET_GYRO_RESET_BIT    2
 #define MPU6050_PATHRESET_ACCEL_RESET_BIT   1
@@ -333,14 +334,15 @@
 #define MPU6050_DETECT_DECREMENT_2      0x2
 #define MPU6050_DETECT_DECREMENT_4      0x3
 
-#define MPU6050_USERCTRL_DMP_EN_BIT             7
-#define MPU6050_USERCTRL_FIFO_EN_BIT            6
-#define MPU6050_USERCTRL_I2C_MST_EN_BIT         5
-#define MPU6050_USERCTRL_I2C_IF_DIS_BIT         4
-#define MPU6050_USERCTRL_DMP_RESET_BIT          3
-#define MPU6050_USERCTRL_FIFO_RESET_BIT         2
-#define MPU6050_USERCTRL_I2C_MST_RESET_BIT      1
-#define MPU6050_USERCTRL_SIG_COND_RESET_BIT     0
+// Reg106(0x6A): MPU6050_RA_USER_CTRL 
+#define MPU6050_USERCTRL_DMP_EN_BIT             0x01<<7
+#define MPU6050_USERCTRL_FIFO_EN_BIT            0x01<<6
+#define MPU6050_USERCTRL_I2C_MST_EN_BIT         0x01<<5
+#define MPU6050_USERCTRL_I2C_IF_DIS_BIT         0x01<<4
+#define MPU6050_USERCTRL_DMP_RESET_BIT          0x01<<3
+#define MPU6050_USERCTRL_FIFO_RESET_BIT         0x01<<2
+#define MPU6050_USERCTRL_I2C_MST_RESET_BIT      0x01<<1
+#define MPU6050_USERCTRL_SIG_COND_RESET_BIT     0x01<<0
 
 // Reg107: PWR_MGMT_1 bit7: 复位设备 bit6~bit5, bit2~bit0: 配置电源模式和时钟源 bit3: 失能温传 
 #define MPU6050_PWR1_DEVICE_RESET			  0x01<<7	
@@ -380,7 +382,7 @@
 
 #define MPU6050_ADDRESS_AD0_LOW     0x68 // AD0接地，7位从机设备地址0x68
 #define MPU6050_ADDRESS_AD0_HIGH    0x69 // AD0接电源，7位从机设备地址0x69
-#define MPU6050_SLAVE_ADDRESS  MPU6050_ADDRESS_AD0_LOW     //AD0接地，MPU6050器件读地址0x68
+#define MPU6050_SLAVE_ADDRESS       (0x68<<1)    //AD0接地，MPU6050器件读地址0x68
 
 #define MPU6050_DMP_MEMORY_BANKS        8
 #define MPU6050_DMP_MEMORY_BANK_SIZE    256
@@ -402,15 +404,15 @@
 void i2c_mpu6050_init(void);
 uint8_t i2c_mpu6050_check(void);
 
-void i2c_mpu6050_write_reg(uint8_t reg, uint8_t value);
-uint8_t i2c_mpu6050_read_reg(uint8_t reg);
+u8 i2c_mpu6050_write_reg(uint8_t reg, uint8_t value);
+u8 i2c_mpu6050_read_reg(uint8_t reg, uint8_t* read_add);
 void i2c_mpu6050_write_buffer(uint8_t reg, uint8_t* pbuffer, uint8_t num);
 void i2c_mpu6050_read_buffer(uint8_t reg, uint8_t* pbuffer, uint8_t num);
 
-void i2c_mpu6050_read_acc(uint16_t* acc);
-void i2c_mpu6050_read_gyro(uint16_t* gyro);
-void i2c_mpu6050_read_temp(uint16_t* temp);
+void i2c_mpu6050_read_acc(int16_t* acc);
+void i2c_mpu6050_read_gyro(int16_t* gyro);
+void i2c_mpu6050_read_temp(float* temp);
 
-void i2c_mpu6050_delay(void);
+
 
 #endif  /*__MPU6050*/

@@ -11,7 +11,6 @@
 #include "stm32f10x.h"
 
 
-
 //NRF24L01寄存器操作命令
 #define READ_REG_NRF         0x00  //读配置寄存器,低5位为寄存器地址
 #define WRITE_REG_NRF        0x20  //写配置寄存器,低5位为寄存器地址
@@ -144,10 +143,10 @@
 #define PLL_LOCK							0x01<<4  // 强制PLL锁信号，只在测试时使用
 #define RF_DR_HIGH						0x01<<3  // 选择高速速率 编码：[RF_DR_LOW, RF_DR_HIGH]
 																			 // '00'-1Mbps '01'-2Mbps '10'-250kbos '11'-Reserved
-#define RF_PWR_18dBm  				0x00<<2  // RF输出功率大小  '00'- -18dBm
-#define RF_PWR_12dBm					0x01<<2	 // RF输出功率大小  '01'- -12dBm 
-#define RF_PWR_6dBm						0x02<<2	 // RF输出功率大小  '10'- -6dBm 
-#define RF_PWR_0dBm						0x03<<2	 // RF输出功率大小  '11'- 0dBm
+#define RF_PWR_18dBm  				0x00<<0  // RF输出功率大小  '00'- -18dBm
+#define RF_PWR_12dBm					0x01<<0	 // RF输出功率大小  '01'- -12dBm 
+#define RF_PWR_6dBm						0x02<<0	 // RF输出功率大小  '10'- -6dBm 
+#define RF_PWR_0dBm						0x03<<0	 // RF输出功率大小  '11'- 0dBm
 
 
 // STATUS寄存器配置：bit7：预留 bit6~bit0:
@@ -168,16 +167,16 @@
 
 
 
+// check返回值宏
+#define SUCCESS								  0x01
+#define FAILURE									0x00
 
-//24L01发送接收数据宽度定义
+
+//nRF24L01发送接收数据宽度定义
 #define TX_ADR_WIDTH    5   //5字节的地址宽度
 #define RX_ADR_WIDTH    5   //5字节的地址宽度
-#define TX_PLOAD_WIDTH  32  //32字节的用户数据宽度
-#define RX_PLOAD_WIDTH  32  //32字节的用户数据宽度
-
-
-#define TX_ADDRESS      0x34
-#define RX_ADDRESS      0x33
+#define TX_PLOAD_WIDTH  8  //8字节的用户数据宽度
+#define RX_PLOAD_WIDTH  8  //8字节的用户数据宽度
 
 
 
@@ -185,24 +184,11 @@
 void spi_nrf_init(void);
 uint8_t spi_nrf_check(void);
 
-uint8_t spi_nrf_reg_read(uint8_t reg );
-uint8_t spi_nrf_reg_write(uint8_t reg, uint8_t value);
-
-uint8_t spi_nrf_write_buffer(uint8_t reg, uint8_t* pBuf, uint8_t bytes);
-uint8_t spi_nrf_read_buffer(uint8_t reg, uint8_t* pBuf, uint8_t bytes);
-
 void spi_nrf_rx_mode(void);
 void spi_nrf_tx_mode(void);
 
 uint8_t spi_nrf_tx_packet(uint8_t *txbuffer);
 uint8_t spi_nrf_rx_packet(uint8_t *rxbuf);
 
-
-
-
 															
 #endif
-
-
-
-

@@ -78,7 +78,7 @@ uint8_t spi_send_byte(SPI_TypeDef* SPIx, uint8_t byte)
  uint16_t spi_timeout_usercallback(uint8_t error_code)
 {
   // 等待超时后的处理,输出错误信息,这块这个写得有点问题需要调试
-  //printf("SPI 等待超时! errorCode = %d\n", error_code);
+  printf("SPI 等待超时! errorCode = %d\n", error_code);
   return 0;
 }
 

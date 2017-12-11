@@ -59,6 +59,12 @@
  #define						PWM3_TIM_PIN									GPIO_Pin_2
  #define						PWM4_TIM_PIN									GPIO_Pin_3
  
+ // 引脚电平封装
+ #define						PWM1_TIM_PIN_LOW_FUN()				GPIO_ResetBits(PWM_TIM_PORT, PWM1_TIM_PIN)
+ #define						PWM2_TIM_PIN_LOW_FUN()				GPIO_ResetBits(PWM_TIM_PORT, PWM2_TIM_PIN)
+ #define						PWM3_TIM_PIN_LOW_FUN()				GPIO_ResetBits(PWM_TIM_PORT, PWM3_TIM_PIN)
+ #define						PWM4_TIM_PIN_LOW_FUN()				GPIO_ResetBits(PWM_TIM_PORT, PWM4_TIM_PIN)
+ 
  // 初始化时基配置结构体函数
  // #define						PWM_TIM_TimeBaseInit_FUN							TIM_TimeBaseInit
  
@@ -139,7 +145,7 @@
  
  // 确定外设所在位置APB1，开启对应外设时钟
  #define						MS5611_I2C_APB1Clock_FUN						RCC_APB1PeriphClockCmd
- #define						MS5611_I2C_CLK						    			RCC_APB1Periph_I2C2
+ #define						MS5611_I2C_CLK						    			RCC_APB1Periph_I2C1	
  
  // PB5~PB7引脚需要重映射到TIM2上
  #define						MS5611_I2C_REMAP_FUN()							GPIO_PinRemapConfig(GPIO_Remap_I2C2,ENABLE) 
@@ -257,8 +263,10 @@
   void usb_config(void);
   void status_led_gpio_config(void);
 
-
-
+  void SPI_NRF_Init(void);
+	
+	
+  void I2C_Bus_Init(void);
 
 
 
