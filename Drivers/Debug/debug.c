@@ -54,10 +54,8 @@ void debug_usart_init(void)
  **/
 void debug_usart_check(void)
 {
-	
-	char check_data[]  = "Debug-usart1 is working\n" ;
-	//usart_debug_send_string(check_data, sizeof(check_data));
-	printf("%s", check_data);
+	printf("Debug-usart1 is working\n");
+	//显示输出则串口正常工作
 }
  
  

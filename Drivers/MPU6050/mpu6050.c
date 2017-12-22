@@ -17,7 +17,7 @@
  
 static void i2c_mpu6050_delay(void); 
 static uint8_t i2c_send_data_single(uint8_t reg, uint8_t byte);
-static uint8_t i2c_send_data(uint8_t reg, uint8_t* buffer, u8 num);
+//static uint8_t i2c_send_data(uint8_t reg, uint8_t* buffer, u8 num);
 static uint8_t i2c_receive_data(u8 reg, uint8_t* byte_add, uint8_t num);
 static uint8_t i2c_timeout_usercallback(uint8_t error_code);
 
@@ -46,10 +46,10 @@ void i2c_mpu6050_init(void)
 	i2c_send_data_single(MPU6050_RA_PWR_MGMT_1, 0x00);	     																				//解除休眠状态
 	i2c_send_data_single(MPU6050_RA_SMPLRT_DIV , MPU6050_SMPLRT_DEV_GY1k);	    								    //陀螺仪采样率1kHz
 	i2c_send_data_single(MPU6050_RA_CONFIG , MPU6050_EXT_SYNC_ACCEL_YOUT_L);	  								    //同步信号MPU6050_EXT_SYNC_ACCEL_YOUT_L
-	i2c_send_data_single(MPU6050_RA_ACCEL_CONFIG , MPU6050_ACCEL_FS_2G|MPU6050_DHPF_5);	  				  //配置加速度传感器工作在2G模式, Digital High Pass Filter？
-	i2c_send_data_single(MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_FS_2000);     												//陀螺仪设置不自检，2000deg/s量程
+	i2c_send_data_single(MPU6050_RA_ACCEL_CONFIG , MPU6050_ACCEL_FS_2G|MPU6050_DHPF_5);	  				  //配置加速度计量程+-2G, Digital High Pass Filter
+	i2c_send_data_single(MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_FS_2000);     												//陀螺仪设置不自检，量程+-2000deg/s
   
-	
+	i2c_mpu6050_check();//测试是否连接正常
 }	
 
 
@@ -66,9 +66,9 @@ uint8_t i2c_mpu6050_check(void)
 {
 	uint8_t value = 0;
 	i2c_receive_data(MPU6050_RA_WHO_AM_I, &value, 1);
-	printf("value = %d\n", value);
 	if(value == 0x68)
 	{
+		printf("MPU6050 is working...\n");
 		return SUCCESS;
 	}
 	return ERROR;
@@ -86,15 +86,23 @@ uint8_t i2c_mpu6050_check(void)
  * 描述：读取加计数据 16348 LSB/g
  *
  */
-void i2c_mpu6050_read_acc(int16_t* acc)
+void i2c_mpu6050_read_acc(float* acc)
 {
 	
-	uint8_t buffer[6];//认为这个数据有无符号无所谓，需要表达的才有意义
+	u16 acc_temp[3];//这中间变量是按位计算时候担心float存储方式不一致
+	u8 buffer[6];//认为这个数据有无符号无所谓，需要表达的才有意义
 	i2c_receive_data(MPU6050_RA_ACCEL_XOUT_H, buffer, 6);
 	//读取加计数据首地址
-	acc[0] = (buffer[0]<<8) | buffer[1];
-	acc[1] = (buffer[2]<<8) | buffer[3];
-	acc[2] = (buffer[4]<<8) | buffer[5];
+	acc_temp[0] = (buffer[0]<<8) | buffer[1];
+	acc_temp[1] = (buffer[2]<<8) | buffer[3];
+	acc_temp[2] = (buffer[4]<<8) | buffer[5];
+  printf("MPU6050  acc_temp: %d%s%d%s%d%s", acc_temp[0], " acc_tempy: ", acc_temp[1], " acc_tempz: ", acc_temp[2], "\n");
+	 
+	//转化成g单位
+	acc[0] = (float)acc_temp[0] * 2 / 32768;
+	acc[1] = (float)acc_temp[1] * 2 / 32768;
+	acc[2] = (float)acc_temp[2] * 2 / 32768;
+	printf("MPU6050  accx: %.2f%s%.2f%s%.2f%s", acc[0], " g accy: ", acc[1], " g accz: ", acc[2], " g\n");
 	
 }
 
@@ -111,15 +119,22 @@ void i2c_mpu6050_read_acc(int16_t* acc)
  * 描述：读取陀螺仪数据 16.4LSB
  *
  */
-void i2c_mpu6050_read_gyro(int16_t* gyro)
+void i2c_mpu6050_read_gyro(float* gyro)
 {
-	
+	u16 gyro_temp[3];
 	uint8_t buffer[6];
 	i2c_receive_data(MPU6050_RA_GYRO_XOUT_H, buffer, 6);
 	//读取陀螺仪数据首地址
-	gyro[0] = (buffer[0]<<8) | buffer[1];
-	gyro[1] = (buffer[2]<<8) | buffer[3];
-	gyro[2] = (buffer[4]<<8) | buffer[5];
+	gyro_temp[0] = (buffer[0]<<8) | buffer[1];
+	gyro_temp[1] = (buffer[2]<<8) | buffer[3];
+	gyro_temp[2] = (buffer[4]<<8) | buffer[5];
+	 
+	//转化成dps单位
+	gyro[0] = (float)gyro_temp[0] * 2000/ 32768;
+	gyro[1] = (float)gyro_temp[1] * 2000/ 32768;
+	gyro[2] = (float)gyro_temp[2] * 2000/ 32768;
+	
+	printf("MPU6050 gyro: %.2f%s%.2f%s%.2f%s", gyro[0], " dps gyroy: ", gyro[1], " dps gyroz: ", gyro[2], "dps\n");
 	
 }
 
@@ -148,6 +163,8 @@ void i2c_mpu6050_read_temp(float* temp)
 	temp_quant = (buffer[0]<<8) | buffer[1];
 	//转换成摄氏温度
 	temp[0] = (double)temp_quant/340.0 + 36.53;
+	//printf("MPU6050温度: %.2f%s", temp[0], "\n");
+
 }
 
 
@@ -272,17 +289,22 @@ void i2c_mpu6050_init_mag(void)
  * 描述：读取磁罗盘数据
  *
  */ 
-void i2c_mpu6050_read_mag(int16_t* mag)
+void i2c_mpu6050_read_mag(float* mag)
 {
+	u16 mag_temp[3];
 	uint8_t buffer[6];
 	// 使能数据传输之后，即可直接通过读取6050对应寄存器获得磁罗盘数据
 	i2c_receive_data(MPU6050_RA_EXT_SENS_DATA_00, buffer, 6);
 	// 地址MPU6050_RA_EXT_SENS_DATA_00: Reg73~96
-	printf("---:%d\n", buffer[2]);
-	mag[0] = (buffer[0]<<8) | buffer[1];   //magX-MB: 0x03 LB: 0x04
-	mag[1] = (buffer[2]<<8) | buffer[3];   //magZ-MB: 0x05 LB: 0x06
-	mag[2] = (buffer[4]<<8) | buffer[5];   //magY-MB: 0x07 LB: 0x08
-	printf("--:%d\n", mag[2]);
+	mag_temp[0] = (buffer[0]<<8) | buffer[1];   //magX-MB: 0x03 LB: 0x04
+	mag_temp[1] = (buffer[2]<<8) | buffer[3];   //magZ-MB: 0x05 LB: 0x06
+	mag_temp[2] = (buffer[4]<<8) | buffer[5];   //magY-MB: 0x07 LB: 0x08
+
+	// 增益设置为230
+  mag[0] = (float)mag_temp[0] * 4.35;
+	mag[1] = (float)mag_temp[1] * 4.35;
+	mag[2] = (float)mag_temp[2] * 4.35;
+	
 }
 
 
@@ -361,6 +383,8 @@ uint8_t i2c_send_data_single(uint8_t reg, uint8_t byte)
 		
 	I2C_GenerateSTOP (MPU6050_I2C, ENABLE); //5 停止信号
 	
+	I2C_Cmd(MPU6050_I2C, DISABLE);
+	I2C_Cmd(MPU6050_I2C, ENABLE);
 	return SUCCESS;
 }
 
@@ -530,7 +554,7 @@ uint8_t i2c_receive_data(u8 reg, uint8_t* buffer, uint8_t num)
 	{
 		if (num == 1)//读取最后一字节数据
 		{
-			I2C_AcknowledgeConfig(MPU6050_I2C, DISABLE);//最后一次收到的Nack
+			I2C_AcknowledgeConfig(MPU6050_I2C, DISABLE);//最后一次收到后发送Nack
 			I2C_GenerateSTOP(MPU6050_I2C, ENABLE); 
 		}
     if(I2C_CheckEvent(MPU6050_I2C, I2C_EVENT_MASTER_BYTE_RECEIVED))  
@@ -547,6 +571,10 @@ uint8_t i2c_receive_data(u8 reg, uint8_t* buffer, uint8_t num)
     }
 	}
 	I2C_AcknowledgeConfig(MPU6050_I2C, ENABLE);
+	
+	I2C_Cmd(MPU6050_I2C, DISABLE);
+	I2C_Cmd(MPU6050_I2C, ENABLE);
+	
 	return SUCCESS;//成功读出数据
 }
 	
@@ -562,17 +590,12 @@ uint8_t i2c_receive_data(u8 reg, uint8_t* buffer, uint8_t num)
 uint8_t i2c_timeout_usercallback(uint8_t error_code)
 {
 	printf("MPU6050 等待超时！errorCode =%d\n", error_code);
+	I2C_Cmd(MPU6050_I2C, DISABLE);
+	I2C_Cmd(MPU6050_I2C, ENABLE);
 	return 0;
 }
 
 
-
-//int fputc(int ch, FILE* f)
-//{
-//	USART_SendData(DEBUG_USART, (uint8_t) ch);
-//	while (USART_GetFlagStatus(DEBUG_USART, DEBUG_FLAG_TXE) == RESET
-	
-//}
 
 
 

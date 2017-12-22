@@ -80,10 +80,12 @@
 
 void i2c_mpu6050_config_mag(void);
 void i2c_mpu6050_init_mag(void);
-void i2c_mpu6050_read_mag(int16_t* mag);
+void i2c_mpu6050_read_mag(float* mag);
 
-
-
+// Èí¼þÄ£Äâ
+void i2c_mpu6050_config_mag_s(void);
+void i2c_mpu6050_init_mag_s(void);
+void i2c_mpu6050_read_mag_s(float* mag);
 
 
 

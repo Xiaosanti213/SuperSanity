@@ -318,7 +318,7 @@ uint8_t spi_nrf_reg_write(uint8_t reg, uint8_t value)
 	status = spi_send_byte(RC_SPI, reg);
 	spi_send_byte(RC_SPI, value);
 	
-	RC_SPI_NSS_HIGH_FUN() ;
+	RC_SPI_NSS_HIGH_FUN();
 	return status;
 	
 }

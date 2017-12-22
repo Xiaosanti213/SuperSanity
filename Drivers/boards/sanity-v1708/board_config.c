@@ -24,6 +24,7 @@
  
  
 #include "board_config.h"
+#include "api_i2c.h"
 
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_tim.h" 
@@ -111,10 +112,10 @@
 {
 	
 	//占空比配置
-	uint16_t CH1_CCR_Val = 20000;
-	uint16_t CH2_CCR_Val = 20000;
-	uint16_t CH3_CCR_Val = 20000;
-	uint16_t CH4_CCR_Val = 20000;
+	uint16_t CH1_CCR_Val = 0;
+	uint16_t CH2_CCR_Val = 0;
+	uint16_t CH3_CCR_Val = 0;
+	uint16_t CH4_CCR_Val = 0;
 	
 	
 	
@@ -131,11 +132,11 @@
 	
 	// 不分频 PCLK1 = 72MHz
 	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-	// 向上计数
+	// 向下计数
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	// 定时器周期（影子寄存器ARR的值）和下面的时钟构成周期
-	TIM_TimeBaseInitStructure.TIM_Period = (20000-1);
-	// 定时器预分频的值, 配置驱动周期10s，计数一个数时间1/(TIMxCLK/(psc+1)) 20ms
+	TIM_TimeBaseInitStructure.TIM_Period = (2400-1);
+	// 定时器预分频的值, 配置驱动周期1us，计数一个数时间1/(TIMxCLK/(psc+1)) 20ms
 	TIM_TimeBaseInitStructure.TIM_Prescaler = (72-1);
 	// TIM_RepetitionCounter只存在与高级定时器当中, 无需设置重复计数器的值
 	TIM_TimeBaseInitStructure.TIM_RepetitionCounter=0;	
@@ -150,7 +151,7 @@
 	// 使能输出
 	TIM_OCBaseInitStructure.TIM_OutputState = TIM_OutputState_Enable ;
 	// 设置初始PWM脉冲宽度0
-	TIM_OCBaseInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low ;
+	TIM_OCBaseInitStructure.TIM_OCPolarity = TIM_OCPolarity_High ;
 	// 定时器计数值小于CCR_Val时有效电平为低电平
 	
 	TIM_OCBaseInitStructure.TIM_Pulse = CH1_CCR_Val;
@@ -187,7 +188,7 @@
  * 
  * 名称: rc_spi_gpio_config
  *
- * 描述: 配置gpio对应的PA4~PA7，PB0引脚
+ * 描述: 配置gpio对应的PA4~PA7，PB0，PB1引脚
  *   
  ************************************************************************************/
 
@@ -215,16 +216,12 @@
 	// INT 上拉输入, CE, NSS引脚配置成普通输出模式
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStructure.GPIO_Pin = RC_SPI_NSS_PIN;
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
-	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStructure.GPIO_Pin = RC_SPI_CE_PIN;
-  //GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 		
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
 	GPIO_InitStructure.GPIO_Pin = RC_SPI_INT_PIN;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
@@ -304,7 +301,7 @@
    GPIO_InitStructure.GPIO_Pin = MS5611_I2C_INT_PIN;
 	 GPIO_Init(MS5611_I2C_PORT, &GPIO_InitStructure); 
 	 
-	 // 其他引脚配置复用模式
+	 // 其他引脚配置复用模式I2C必须采用AF_OD模式
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
 	 GPIO_InitStructure.GPIO_Pin = MS5611_I2C_SCL_PIN;
 	 GPIO_Init(MS5611_I2C_PORT, &GPIO_InitStructure); 
@@ -360,6 +357,46 @@
  
  
  }
+ 
+ 
+ 
+ 
+
+/************************************************************************************
+ * 
+ * 名称: ms5611_i2c_gpio_config_s
+ *
+ * 描述: 软件模拟I2C协议，配置I2C对应的PB10~PB11引脚
+ *   
+ ************************************************************************************/
+
+  void ms5611_i2c_gpio_config_s(void)
+ {
+	 
+	 GPIO_InitTypeDef GPIO_InitStructure;
+	 //开启端口外设时钟，并没有封装
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE); 
+	 
+	 
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU ;
+	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;//软件模拟IIC频率降下来担心快速影响通信
+	 
+	 // 中断引脚是普通输出模式----这个电路图中并没有连接
+   GPIO_InitStructure.GPIO_Pin = MS5611_I2C_INT_PIN;
+	 GPIO_Init(MS5611_I2C_PORT, &GPIO_InitStructure); 
+	 
+	 // 通信引脚配置开漏模式，外部上拉
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+	 GPIO_InitStructure.GPIO_Pin = MS5611_I2C_SCL_PIN|MS5611_I2C_SDA_PIN;
+	 GPIO_Init(MS5611_I2C_PORT, &GPIO_InitStructure);  
+	 
+	 ms5611_i2c_stop_s();
+ 
+ }
+ 
+ 
+ 
+ 
  
  
  
@@ -455,34 +492,18 @@
 	 
 	 GPIO_InitTypeDef GPIO_InitStructure;
 	 
-	
-	RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOB, ENABLE );	 
-	 
-	 
-	 // 中断引脚是普通输出模式
+	 RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOB, ENABLE );	 
+	  
+	 // 中断引脚是上拉输入模式
 	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_INT_PIN;
 	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;//中断引脚配置？？IPU
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 	 GPIO_Init(GPIOB, &GPIO_InitStructure); 
 	 
-	 // 其他引脚配置复用开漏模式
-	 //GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
-	 //GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SCL_PIN;
-	 //GPIO_Init(MPU6050_I2C_PORT, &GPIO_InitStructure); 
-	 
-	 //GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SDA_PIN;
-	 //GPIO_Init(MPU6050_I2C_PORT, &GPIO_InitStructure); 
-	 
-	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SCL_PIN;
-   //GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;	       // 开漏输出
-   GPIO_Init(GPIOB, &GPIO_InitStructure);
-	
-   GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SDA_PIN;
-   //GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-   //GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;	       // 开漏输出
-   GPIO_Init(GPIOB, &GPIO_InitStructure);	
- 
+	 // 其他引脚配置复用开漏模式	 
+	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SCL_PIN|MPU6050_I2C_SDA_PIN;
+   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;	       
+   GPIO_Init(GPIOB, &GPIO_InitStructure); 
  
  }
  
@@ -502,29 +523,8 @@
   static void mpu6050_i2c_config(void)
  {
 	 
-	 //I2C_InitTypeDef  I2C_InitStructure;
-	 
-	 // 使能时钟
-   //RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
-	 
-	 // 使能响应信号
-	 //I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-	 // 设置从机地址位数
-	 //I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	 // 设置SCL线高低电平占空比，一般要求不会很严格
-   //I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
-	 // 不需要在此处区分主从模式
-   //I2C_InitStructure.I2C_Mode  = I2C_Mode_I2C;
-	 // 设置通讯速率100kHz标准模式
-   //I2C_InitStructure.I2C_ClockSpeed = 400000;
-	 // 主机地址
-   //I2C_InitStructure.I2C_OwnAddress1 = 0x0A;
-
-	 
-	 //I2C_Init(MPU6050_I2C, &I2C_InitStructure); 
-	 
-	 // 使能I2C2外设
-	 //I2C_Cmd(MPU6050_I2C, ENABLE);
+	// 使能I2C2外设
+	//I2C_Cmd(MPU6050_I2C, ENABLE);
 	I2C_InitTypeDef  I2C_InitStructure; 
 	 
   RCC_APB1PeriphClockCmd ( RCC_APB1Periph_I2C1, ENABLE );
@@ -573,73 +573,21 @@
 	 
 	 
 	 // 中断引脚是普通上拉输入模式
-	 GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
-	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_INT_PIN;
+	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;  //软件模拟IIC频率降下来担心快速影响通信
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 	 GPIO_Init(GPIOB, &GPIO_InitStructure); 
 	 
-	 // 其他引脚配置复用开漏模式
-	 //GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
-	 //GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SCL_PIN;
-	 //GPIO_Init(MPU6050_I2C_PORT, &GPIO_InitStructure); 
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SCL_PIN;
+	 GPIO_Init(GPIOB, &GPIO_InitStructure);
 	 
-	 //GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SDA_PIN;
-	 //GPIO_Init(MPU6050_I2C_PORT, &GPIO_InitStructure); 
-	 
-	 GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
-   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SDA_PIN;
    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;	       // 普通开漏输出
    GPIO_Init(GPIOB, &GPIO_InitStructure);
 	
-   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
-   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;	       // 普通开漏输出
-   GPIO_Init(GPIOB, &GPIO_InitStructure);	
+	 mpu6050_i2c_stop_s();
   }
- 
- 
- 
-	
-	
-/************************************************************************************
- * 
- * 名称: mpu6050_i2c_config_s
- *
- * 描述: 配置软件模拟协议的与MPU6050传感器I2C连接
- *   
- ************************************************************************************/
-
-  static void mpu6050_i2c_config_s(void)
- {
-	 
-	I2C_InitTypeDef  I2C_InitStructure; 
-	 
-  RCC_APB1PeriphClockCmd ( RCC_APB1Periph_I2C1, ENABLE );
-
-  /* I2C 配置 */
-  I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-	
-	/* 高电平数据稳定，低电平数据变化 SCL 时钟线的占空比 */
-  I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
-	
-  I2C_InitStructure.I2C_OwnAddress1 =0X0A; 
-  I2C_InitStructure.I2C_Ack = I2C_Ack_Enable ;
-	
-	/* I2C的寻址模式 */
-  I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	
-	/* 通信速率 */
-  I2C_InitStructure.I2C_ClockSpeed = 100000;
-  
-	/* I2C1 初始化 */
-  I2C_Init(I2C1, &I2C_InitStructure);
-  
-	/* 使能 I2C1 */
-  I2C_Cmd(I2C1, ENABLE); 
- 
- }
- 
- 
  
  
  
@@ -668,7 +616,7 @@
 	 GPIO_Init(STATUS_LED_PORT, &GPIO_InitStructure); 
 	 
 	 STATUS_LED_ON;
- 
+   //默认LED关闭
  }
  
  

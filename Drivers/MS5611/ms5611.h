@@ -26,6 +26,10 @@
 
 #define       MS5611_SLAVE_ADDRESS			(0x77<<1)
 
+#define				MS5611_SLAVE_READ_ADDRESS (0x77<<1 | 0x01)
+#define				MS5611_SLAVE_WRITE_ADDRESS (0x77<<1 | 0x00)
+
+
 
 #define				MS5611_RESET							0x1E
 
@@ -69,6 +73,10 @@
 
 int32_t i2c_ms5611_calculate(void);
 void i2c_ms5611_init(void);
+
+
+int32_t i2c_ms5611_calculate_s(void);
+void i2c_ms5611_init_s(void);
 
 
 

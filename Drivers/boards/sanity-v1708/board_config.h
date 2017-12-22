@@ -141,11 +141,11 @@
  * 描述: I2C2连接MS5611模块
  *   
  ************************************************************************************/
- #define						MS5611_I2C										I2C2
+ #define						MS5611_I2C										     I2C2//用测试模块
  
  // 确定外设所在位置APB1，开启对应外设时钟
  #define						MS5611_I2C_APB1Clock_FUN						RCC_APB1PeriphClockCmd
- #define						MS5611_I2C_CLK						    			RCC_APB1Periph_I2C1	
+ #define						MS5611_I2C_CLK						    			RCC_APB1Periph_I2C2
  
  // PB5~PB7引脚需要重映射到TIM2上
  #define						MS5611_I2C_REMAP_FUN()							GPIO_PinRemapConfig(GPIO_Remap_I2C2,ENABLE) 
@@ -160,7 +160,19 @@
 // #define						MS5611_I2C_Init_FUN							  	I2C_Init					 
 
 
-
+ // 下面是时钟线和地址线的操作封装
+ #define MS5611_I2C_SCL_1_FUN()  GPIO_SetBits(MS5611_I2C_PORT, MS5611_I2C_SCL_PIN)		
+ #define MS5611_I2C_SCL_0_FUN()  GPIO_ResetBits(MS5611_I2C_PORT, MS5611_I2C_SCL_PIN)		
+	
+ #define MS5611_I2C_SDA_1_FUN()  GPIO_SetBits(MS5611_I2C_PORT, MS5611_I2C_SDA_PIN)		
+ #define MS5611_I2C_SDA_0_FUN()  GPIO_ResetBits(MS5611_I2C_PORT, MS5611_I2C_SDA_PIN)		
+	
+ #define MS5611_I2C_SDA_READ_FUN()  GPIO_ReadInputDataBit(MS5611_I2C_PORT, MS5611_I2C_SDA_PIN)
+ 
+ 
+ 
+ 
+ 
 
 
 
@@ -218,14 +230,26 @@
  // 端口引脚配置
  #define						MPU6050_I2C_PORT										GPIOB
  #define						MPU6050_I2C_INT_PIN									GPIO_Pin_5
- #define						MPU6050_I2C_SCL_PIN									GPIO_Pin_6
- #define						MPU6050_I2C_SDA_PIN       					GPIO_Pin_7
+ #define						MPU6050_I2C_SCL_PIN									GPIO_Pin_7
+ #define						MPU6050_I2C_SDA_PIN       					GPIO_Pin_6
+ 
  
  // 初始化SPI配置结构体函数
 // #define						MPU6050_I2C_Init_FUN								I2C_Init
 
 
 
+ // 下面是时钟线和地址线的操作封装
+ #define MPU6050_I2C_SCL_1_FUN()  GPIO_SetBits(MPU6050_I2C_PORT, MPU6050_I2C_SCL_PIN)		
+ #define MPU6050_I2C_SCL_0_FUN()  GPIO_ResetBits(MPU6050_I2C_PORT, MPU6050_I2C_SCL_PIN)		
+	
+ #define MPU6050_I2C_SDA_1_FUN()  GPIO_SetBits(MPU6050_I2C_PORT, MPU6050_I2C_SDA_PIN)		
+ #define MPU6050_I2C_SDA_0_FUN()  GPIO_ResetBits(MPU6050_I2C_PORT, MPU6050_I2C_SDA_PIN)		
+	
+ #define MPU6050_I2C_SDA_READ_FUN()  GPIO_ReadInputDataBit(MPU6050_I2C_PORT, MPU6050_I2C_SDA_PIN)
+ 
+ 
+ 
 
 /************************************************************************************
  * 
@@ -262,11 +286,9 @@
   void nrf24l01_config(void);
   void usb_config(void);
   void status_led_gpio_config(void);
-
-  void SPI_NRF_Init(void);
 	
-	
-  void I2C_Bus_Init(void);
+  void ms5611_i2c_gpio_config_s(void);
+	void mpu6050_i2c_gpio_config_s(void);
 
 
 

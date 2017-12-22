@@ -384,6 +384,9 @@
 #define MPU6050_ADDRESS_AD0_HIGH    0x69 // AD0接电源，7位从机设备地址0x69
 #define MPU6050_SLAVE_ADDRESS       (0x68<<1)    //AD0接地，MPU6050器件读地址0x68
 
+#define MPU6050_SLAVE_READ_ADDRESS  (0x68<<1 |0x01) //软件模拟使用
+#define MPU6050_SLAVE_WRITE_ADDRESS (0x68<<1 |0x00) //移位运算符优先于|
+
 #define MPU6050_DMP_MEMORY_BANKS        8
 #define MPU6050_DMP_MEMORY_BANK_SIZE    256
 #define MPU6050_DMP_MEMORY_CHUNK_SIZE   16
@@ -404,14 +407,27 @@
 void i2c_mpu6050_init(void);
 uint8_t i2c_mpu6050_check(void);
 
-u8 i2c_mpu6050_write_reg(uint8_t reg, uint8_t value);
-u8 i2c_mpu6050_read_reg(uint8_t reg, uint8_t* read_add);
-void i2c_mpu6050_write_buffer(uint8_t reg, uint8_t* pbuffer, uint8_t num);
-void i2c_mpu6050_read_buffer(uint8_t reg, uint8_t* pbuffer, uint8_t num);
-
-void i2c_mpu6050_read_acc(int16_t* acc);
-void i2c_mpu6050_read_gyro(int16_t* gyro);
+void i2c_mpu6050_read_acc(float* acc);
+void i2c_mpu6050_read_gyro(float* gyro);
 void i2c_mpu6050_read_temp(float* temp);
+
+
+// 软件模拟模式下
+void i2c_mpu6050_init_s(void);
+uint8_t i2c_mpu6050_check_s(void);
+
+void i2c_mpu6050_read_acc_s(float* acc);
+void i2c_mpu6050_read_gyro_s(float* gyro);
+void i2c_mpu6050_read_temp_s(float* temp);
+
+
+
+	
+
+
+
+
+
 
 
 

@@ -38,7 +38,7 @@ static uint8_t i2c_ms5611_receive_data(uint8_t* buffer, uint8_t num);
 void i2c_ms5611_init(void)
 {
 	ms5611_config();																	//ms5611引脚和片上外设配置
-  i2c_ms5611_delay(1000); 															//ms5611上电延时
+  i2c_ms5611_delay(1000); 													//ms5611上电延时
 	
 	i2c_ms5611_send_cmd(MS5611_RESET);	    					//写入传感器复位指令
   i2c_ms5611_delay(1000); 
@@ -81,7 +81,6 @@ void i2c_ms5611_read_calibration(uint8_t cx, uint16_t* cx_buffer)
 	i2c_ms5611_send_cmd(cx);																					// 发送指令	
 	i2c_ms5611_receive_data(cx_pre_get, 2);
 	*cx_buffer = ((u16)cx_pre_get[0] << 8) | ((u16)cx_pre_get[1]);    // 整合到u16当中
-	printf("calib:%d\t\n", *cx_buffer);
 }
 
 
@@ -106,7 +105,7 @@ void i2c_ms5611_read_adc(uint8_t config, uint32_t* adc_buffer)//形参一个字节，传
 	i2c_ms5611_send_cmd(MS5611_ADC_READ); 													// 发送MS5611_ADC_READ指令
 	i2c_ms5611_receive_data(adc_pre, 3);
 	*adc_buffer = (adc_pre[0] << 16) | (adc_pre[1] << 8) | (adc_pre[2]); 
-	printf("adcx: %d\t\n", *adc_buffer);
+	//printf("adcx: %d\t\n", *adc_buffer);
 }
 
 
@@ -146,21 +145,40 @@ int32_t i2c_ms5611_calculate(void)
 		i2c_ms5611_read_calibration(PROM_READ_C5, &(coefficient[4]));	//C5: T_REF u16
 		i2c_ms5611_read_calibration(PROM_READ_C6, &(coefficient[5]));	//C6: TEMPSENS u16
 		
+		// printf("MS5611获取内部校准系数:\n");
+		// printf("C1: %d\n", coefficient[0]);
+		// printf("C2: %d\n", coefficient[1]);
+		// printf("C3: %d\n", coefficient[2]);
+		// printf("C4: %d\n", coefficient[3]);
+		// printf("C5: %d\n", coefficient[4]);
+		// printf("C6: %d\n", coefficient[5]);
+		
 		i2c_ms5611_read_adc(MS5611_CONVD1_OSR4096, &digital_pressure);//D1: 压力u32
 		i2c_ms5611_read_adc(MS5611_CONVD2_OSR4096, &digital_temp);    //D2: 温度u32
 		
+		
+		// MS5611获取ADC压力温度值
+		// printf("MS5611获取压力温度值:\n");
+		// printf("digital pressure: %d\n", digital_pressure);
+		// printf("digital temperature: %d\n", digital_temp);
+		
 		difference_temp = (int32_t)digital_temp - ((int32_t)coefficient[4] << 8); 									// 强制转化为32bit有符号运算
+		
 		// dT = D2 - T_REF = D2 - C5 * 2^8
-		temperature = 2000 + difference_temp * (coefficient[5] >> 23);  														// 容量足够
+		temperature = 2000 + (difference_temp * (int64_t)coefficient[5] >> 23);  										// 容量足够，>>优先级比* +都要小。10^9量级 32bit可能会溢出，故用int64
 		// 实际温度：TEMP = 20C + dT*TEMPSENS = 2000 + dT * C6/2^23
-		offset = ((int64_t)coefficient[1] << 16) + (difference_temp >> 7 * coefficient[3]); 				// int64_t与先>>7防止溢出
+		printf("ms5611温度：%.2fC\n", (float)temperature/100);
+		
+		offset = ((int64_t)coefficient[1] << 16) + ((int64_t)difference_temp * coefficient[3] >> 7 ); 				// int64_t与先>>7防止溢出
+		
 		// OFF = OFF_T1 + TCO * dT = C2 * 2^16 + (C4 * dT) / 2^7
-		sensitivity = (((int64_t)coefficient[0]) << 15) + (difference_temp >> 8 * coefficient[2]); 	// int64_t 与先>>8防止溢出
+		sensitivity = (((int64_t)coefficient[0]) << 15) + ((int64_t)coefficient[2] * difference_temp >> 8); 	// int64_t 与先>>会导致得到0；原理同上计算temperature
 		// SENS = SENS_T1 + TCS * dT = C1 * 2^15 + (C3 * dT) / 2^8
-		printf("%d\n\t", (digital_pressure >> 21));
-		pressure = ((digital_pressure >> 21) *  sensitivity - offset) >> 15; 												// 容量足够
+		
+		pressure = (((int64_t)digital_pressure * sensitivity >> 21) - offset) >> 15; 								// 容量足够 -优先级大于>>，加括号防止警告
 		// P = D1 * SENS - OFF = (D1 * SENS / 2^21 - OFF) / 2^15 
- 
+    printf("压力：%.2fmbar\n", (float)pressure/10);
+		
 		return pressure;
 	}
 	

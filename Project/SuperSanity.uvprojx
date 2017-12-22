@@ -369,7 +369,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\Drivers\boards\api;..\Drivers\boards\sanity-v1708;..\Drivers\nRF24L01;..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\User;..\Drivers\MPU6050;..\Drivers\Debug;..\uCOS-II\Source;..\uCOS-II\Ports;..\Drivers\Motor;..\Drivers\MS5611</IncludePath>
+              <IncludePath>..\Drivers\boards\api;..\Drivers\boards\sanity-v1708;..\Drivers\nRF24L01;..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\User;..\Drivers\MPU6050;..\Drivers\Debug;..\uCOS-II\Source;..\uCOS-II\Ports;..\Drivers\Motor;..\Drivers\MS5611;..\Drivers\Sensors</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -526,14 +526,34 @@
               <FilePath>..\Drivers\Motor\motor.c</FilePath>
             </File>
             <File>
-              <FileName>ms5611.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\MS5611\ms5611.c</FilePath>
-            </File>
-            <File>
               <FileName>api_spi.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\boards\api\api_spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>sensors.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\Sensors\sensors.c</FilePath>
+            </File>
+            <File>
+              <FileName>api_i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\boards\api\api_i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>api_i2c2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\boards\api\api_i2c2.c</FilePath>
+            </File>
+            <File>
+              <FileName>ms5611_s.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\MS5611\ms5611_s.c</FilePath>
+            </File>
+            <File>
+              <FileName>mpu6050_s.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\MPU6050\mpu6050_s.c</FilePath>
             </File>
           </Files>
         </Group>
