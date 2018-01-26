@@ -15,8 +15,9 @@
 #include <stdio.h>
 
  
- 
+static int  arm_motors_flag = 0; //默认上锁状态
 static void delay_ms(u16); 
+
 /**
  *
  * 名称: write_mini_motors
@@ -26,13 +27,15 @@ static void delay_ms(u16);
  */ 
  void write_mini_motors(u16* motor)
  {
-	 
-	  // 设置4个空心杯电机输出量
+	 if(arm_motors_flag)
+	 {
+	 	// 设置4个空心杯电机输出量
 	  TIM_SetCompare1(PWM_TIM, motor[0]);
 	  TIM_SetCompare2(PWM_TIM, motor[1]);
 	  TIM_SetCompare3(PWM_TIM, motor[2]);
 		TIM_SetCompare4(PWM_TIM, motor[3]);
- 
+	 }
+
  }
  
  
@@ -104,15 +107,68 @@ static void delay_ms(u16);
  
  /**
  *
- * 名称: go_disarm()
+ * 名称: go_arm_check()
  *
  * 描述：电机解锁怠速状态
  *
  */ 
- void go_disarm()
- {
-		
- }
+void go_arm_check(u16* rc_command)
+{
+	static int16_t arming_counter;
+	u16 temp;
+	// 下面通过四个舵量进行判断 舵量范围
+	// 对于空心杯电机来说，已经映射到[0-2000]
+	
+	if (rc_command[2] > 30) {
+  // 前提油门位于最低点，否则直接退出
+      arming_counter = 0;
+      return;  
+   } 
+	 temp = rc_command[3];
+	 // 取出副翼舵量
+	 if (temp > 1970)
+	 {
+			if(arming_counter < ARM_DELAY)
+			{
+				arming_counter ++;
+				//printf("********************************************\n");
+				//printf("当前摇杆状态解锁计数值：%d\n", arming_counter);
+			}
+			else if(arming_counter == ARM_DELAY)
+			{
+				arming_counter = 0;
+				// 计数器清零
+				STATUS_LED_ON;
+				// 指示灯点亮
+				arm_motors_flag = 1;
+				// 可以输出信号
+			}
+	 }
+	 else if(temp < 30)
+	 // 如果通讯状况不良，则舵量信号一直是0，保证ARM_MOTORS==0
+	 {
+			if(arming_counter < DISARM_DELAY)
+			{
+				arming_counter ++; 
+				//printf("********************************************\n");
+				//printf("当前摇杆状态解锁计数值：%d\n", arming_counter);
+			}
+			else if(arming_counter == DISARM_DELAY)
+			{
+			  arming_counter = 0;
+				// 计数器清零
+				STATUS_LED_OFF;
+				// 上锁状态指示灯熄灭
+				arm_motors_flag = 0;
+				// 禁止输出信号
+			}
+	 }
+}
+
+
+
+
+
  
  
  
@@ -127,20 +183,20 @@ static void delay_ms(u16);
  * 描述：将机型姿态与电机对应
  *
  */ 
-void mix_table(int16_t* axis_pid, struct sensors_data* sd)//struct不能省略
+void mix_table(u16* output, sd* s_data)//struct不能省略
  {
 	 //#define  PIDMIX(X,Y,Z)  sd->rc_command[THROTTLE] + axis_pid[ROLL]*X + axis_pid[PITCH]*Y + axis_pid[YAW]*Z
-	 #define  PIDMIX(X,Y,Z)  sd->rc_command[THROTTLE] + sd->rc_command[ROLL]*X + sd->rc_command[PITCH]*Y + sd->rc_command[YAW]*Z
+	 #define  PIDMIX(X,Y,Z)  output[3] +output[0]*X + output[1]*Y + output[2]*Z
 	 // 对于X型四轴
-	 sd->motor[0] = PIDMIX(-0,-0,+0);  //右前 1号电机
-	 sd->motor[1] = PIDMIX(+0,-0,-0);  //左前 2号电机
-	 sd->motor[2] = PIDMIX(+0,+0,+0);  //左后 3号电机
-	 sd->motor[3] = PIDMIX(-0,+0,+0);  //右后 4号电机
+	 s_data->motor[0] = PIDMIX(-1,-1,+1);  //右前 1号电机 
+	 s_data->motor[1] = PIDMIX(+1,-1,-1);  //左前 2号电机
+	 s_data->motor[2] = PIDMIX(+1,+1,+1);  //左后 3号电机
+	 s_data->motor[3] = PIDMIX(-1,+1,+1);  //右后 4号电机
 	 
-	 printf("一号：%d\n", sd->motor[0]);
-	 printf("二号：%d\n", sd->motor[1]);
-	 printf("三号：%d\n", sd->motor[2]);
-	 printf("四号：%d\n", sd->motor[3]);
+	 //printf("一号：%d\n", sd->motor[0]);
+	 //printf("二号：%d\n", sd->motor[1]);
+	 //printf("三号：%d\n", sd->motor[2]);
+	 //printf("四号：%d\n", sd->motor[3]);
  }
  
  

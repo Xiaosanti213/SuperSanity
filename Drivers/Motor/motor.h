@@ -11,14 +11,19 @@
 #define YAW				3
 
 
+//函数调用频率为10*5Hz 相应计算下面时间阈值
+#define ARM_DELAY               10    //当前测试状态比较好用的
+#define DISARM_DELAY            10
+
 
 
 
 void write_mini_motors(u16* motor);// 空心杯电机
 void write_motors(u16* motor);// 普通无刷电机
-void mix_table(int16_t* axis_pid, struct sensors_data* sd);//struct不能省略
+void mix_table(u16*, sd*);
  
- 
+void go_arm_check(u16*);
+
  
  
 #endif

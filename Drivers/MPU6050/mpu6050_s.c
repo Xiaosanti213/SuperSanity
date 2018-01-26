@@ -20,7 +20,7 @@
  
 static void i2c_mpu6050_delay_s(void); 
 static uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte);
-//static uint8_t i2c_send_data(uint8_t reg, uint8_t* buffer, u8 num);
+//static uint8_t i2c_s	end_data(uint8_t reg, uint8_t* buffer, u8 num);
 static uint8_t i2c_receive_data_s(u8 reg, uint8_t* byte_add, uint8_t num);
 static uint8_t i2c_timeout_usercallback_s(uint8_t error_code);
 
@@ -105,7 +105,7 @@ void i2c_mpu6050_read_acc_s(float* acc)
 	acc[0] = (float)acc_temp[0] * 2 / 32768;
 	acc[1] = (float)acc_temp[1] * 2 / 32768;
 	acc[2] = (float)acc_temp[2] * 2 / 32768;
-	printf("MPU6050 accx: %.2f%s%.2f%s%.2f%s", acc[0], " g accy: ", acc[1], " g accz: ", acc[2], " g\n");
+	printf("MPU6050 Accel ( g  ): %.2f%s%.2f%s%.2f%s", acc[0], "   ", acc[1], "   ", acc[2], "   \n");
 	
 }
 
@@ -137,7 +137,7 @@ void i2c_mpu6050_read_gyro_s(float* gyro)
 	gyro[1] = (float)gyro_temp[1] * 2000/ 32768;
 	gyro[2] = (float)gyro_temp[2] * 2000/ 32768;
 	
-	printf("MPU6050 gyrox: %.2f%s%.2f%s%.2f%s", gyro[0], " dps gyroy: ", gyro[1], " dps gyroz: ", gyro[2], "dps\n");
+	printf("MPU6050 Gyro  (dps ): %.2f%s%.2f%s%.2f%s", gyro[0], "   ", gyro[1], "    ", gyro[2], "      \n");
 	
 }
 
@@ -237,7 +237,7 @@ void i2c_mpu6050_config_mag_s(void)
    // 磁罗盘从机地址
 	 i2c_send_data_single_s(MPU6050_RA_I2C_SLV0_REG, HMC5883L_RA_CONFIG_RB);
    // 磁罗盘配置寄存器CRB 
-   i2c_send_data_single_s(MPU6050_RA_I2C_SLV0_DO, HMC5883L_GN_GAIN_330);
+   i2c_send_data_single_s(MPU6050_RA_I2C_SLV0_DO, HMC5883L_GN_GAIN_230);
 	 // 设置增益大小：HMC5883L_GN_GAIN_230
 	 i2c_send_data_single_s(MPU6050_RA_I2C_SLV0_CTRL, MPU6050_I2C_SLV_EN|0x01);
 	 
@@ -302,13 +302,16 @@ void i2c_mpu6050_read_mag_s(float* mag)
 	mag_temp[0] = (buffer[0]<<8) | buffer[1];   //magX-MB: 0x03 LB: 0x04
 	mag_temp[1] = (buffer[2]<<8) | buffer[3];   //magZ-MB: 0x05 LB: 0x06
 	mag_temp[2] = (buffer[4]<<8) | buffer[5];   //magY-MB: 0x07 LB: 0x08
-
+  printf("%d\n", mag_temp[0]);
+	printf("%d\n", mag_temp[1]);
+	printf("%d\n", mag_temp[2]);
+	
 	// 增益设置为230
   mag[0] = (float)mag_temp[0] * 4.35;
 	mag[1] = (float)mag_temp[1] * 4.35;
 	mag[2] = (float)mag_temp[2] * 4.35;
 	
-	printf("MPU6050 magx: %.2f%s%.2f%s%.2f%s", mag[0], " deg magy: ", mag[1], " deg magz: ", mag[2], "deg\n");
+	printf("MPU6050 Mag   (dps ): %.2f%s%.2f%s%.2f%s", mag[0], "   ", mag[1], "    ", mag[2], "      \n");
 }
 
 

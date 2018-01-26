@@ -615,7 +615,7 @@
    GPIO_InitStructure.GPIO_Pin = STATUS_LED_PIN;
 	 GPIO_Init(STATUS_LED_PORT, &GPIO_InitStructure); 
 	 
-	 STATUS_LED_ON;
+	 STATUS_LED_OFF;
    //Ä¬ÈÏLED¹Ø±Õ
  }
  

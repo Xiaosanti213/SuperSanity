@@ -6,7 +6,7 @@
 
 
 
-struct sensors_data
+typedef struct sensors_data
 {
   u16 rc_command[4];//结构体当中不能赋初值
 	u16 motor[4];
@@ -17,7 +17,7 @@ struct sensors_data
 	float mag[3]; 
 	float press;
 	
-};
+}sd;
 
 
 

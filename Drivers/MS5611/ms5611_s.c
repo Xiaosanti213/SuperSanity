@@ -174,7 +174,7 @@ int32_t i2c_ms5611_calculate_s(void)
 		// dT = D2 - T_REF = D2 - C5 * 2^8
 		temperature = 2000 + (difference_temp * (int64_t)coefficient[5] >> 23);  										// 容量足够，>>优先级比* +都要小。10^9量级 32bit可能会溢出，故用int64
 		// 实际温度：TEMP = 20C + dT*TEMPSENS = 2000 + dT * C6/2^23
-		printf("ms5611温度：%.2fC\n", (float)temperature/100);
+		printf("MS5611  Temp  (Ces ): %.2f   \n", (float)temperature/100);
 		
 		offset = ((int64_t)coefficient[1] << 16) + ((int64_t)difference_temp * coefficient[3] >> 7 ); 				// int64_t与先>>7防止溢出
 		
@@ -184,7 +184,7 @@ int32_t i2c_ms5611_calculate_s(void)
 		
 		pressure = (((int64_t)digital_pressure * sensitivity >> 21) - offset) >> 15; 								// 容量足够 -优先级大于>>，加括号防止警告
 		// P = D1 * SENS - OFF = (D1 * SENS / 2^21 - OFF) / 2^15 
-    printf("压力：%.2fmbar\n", (float)pressure/10);
+    printf("MS5611  Press (mbar): %.2f  \n", (float)pressure/10);
 		
 		return pressure;
 	}

@@ -434,6 +434,6 @@ uint8_t spi_nrf_write_buffer(uint8_t reg, uint8_t* pBuf, uint8_t bytes)
   */
 int nrf_timeout_usercallback(u8 error_code)
 {
-	printf("nrf 等待超时！errorCode =%d\n", error_code);
+	//printf("nrf 等待超时！errorCode =%d\n", error_code);
 	return 0;
 }
