@@ -6,10 +6,8 @@
  */
 
 #include "nRF24L01.h"
-
 #include "api_spi.h"
 #include "board_config.h"
-
 #include "stm32f10x.h"
 #include <stdio.h>
 
@@ -25,8 +23,10 @@ static uint8_t spi_nrf_read_buffer(uint8_t reg, uint8_t* pBuf, uint8_t bytes);
 
 static int nrf_timeout_usercallback(u8 error_code);
 
-//static void power_off(void);
-//static void delay_us(uint16_t us);
+
+
+
+
 /**
   * 名称：spi_nrf_init
   *  
@@ -34,15 +34,10 @@ static int nrf_timeout_usercallback(u8 error_code);
   *
   */
 void spi_nrf_init(void)
-{
-	//gpio_clk_config(); //调试用
-	
+{	
 	nrf24l01_config();	// 不配置亦不传输，CE失能外设，NSS失能SPI
-	//RC_SPI_CE_LOW_FUN();
 	RC_SPI_NSS_HIGH_FUN();
 }
-
-
 
 
 
@@ -94,6 +89,7 @@ uint8_t spi_nrf_check(void)
   *
   */
 
+
 void spi_nrf_rx_mode(void)
 {
 	  //power_off();
@@ -130,6 +126,7 @@ void spi_nrf_rx_mode(void)
   *
   */
 
+/*
 void spi_nrf_tx_mode(void)
 {
     //power_off();
@@ -158,7 +155,7 @@ void spi_nrf_tx_mode(void)
 	  RC_SPI_CE_HIGH_FUN(); 
 		//CE为高,10us后启动发送
 }		  
-
+*/
 
 
 
@@ -169,7 +166,7 @@ void spi_nrf_tx_mode(void)
   * 描述：通过nRF24L01发送数据
   *
   */
-
+/*
 uint8_t spi_nrf_tx_packet(uint8_t *txbuffer)
 {
 	uint8_t tx_status;
@@ -206,7 +203,7 @@ uint8_t spi_nrf_tx_packet(uint8_t *txbuffer)
 	return FAILURE;//发送失败
 }
 
-
+*/
 
 
 
@@ -233,11 +230,7 @@ uint8_t spi_nrf_rx_packet(uint8_t *rxbuf)
 			return nrf_timeout_usercallback(0);//没有接收到数据
 	}
 
-	
 	RC_SPI_CE_LOW_FUN();  	 //进入待机状态
-	
-	
-	
 	
 	rx_status = spi_nrf_reg_read(STATUS);  
 	//读取状态寄存器的值    	 
@@ -274,27 +267,6 @@ uint8_t spi_nrf_rx_packet(uint8_t *rxbuf)
 	// 延时
 //	delay_us(20);
 //}
-
-
-
-
-
-/**
-  * 名称：delay_us
-  *  
-  * 描述：延时us函数
-  *
-  */
-//void delay_us(uint16_t us)
-//{
-//	char i = 0;
-//	for (; us; us--)
-//		for (i = 0; i<1; i++);
-//}
-
-
-
-
 
 
 
@@ -410,7 +382,6 @@ uint8_t spi_nrf_write_buffer(uint8_t reg, uint8_t* pBuf, uint8_t bytes)
 	
 	status = spi_send_byte(RC_SPI, reg);
 	// 选择寄存器 
-	
 	for (byte_ctrl = 0; byte_ctrl<bytes; byte_ctrl++)
 	{
 		spi_send_byte(RC_SPI, pBuf[byte_ctrl]);

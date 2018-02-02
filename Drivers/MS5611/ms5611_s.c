@@ -16,13 +16,10 @@
 #include "api_i2c.h"
 
 
-//static void i2c_ms5611_init_s(void);
-//static u8 i2c_ms5611_check_s(void);
+
 static void i2c_ms5611_read_calibration_s(uint8_t cx, uint16_t* cx_buffer);
 static void i2c_ms5611_read_adc_s(uint8_t config, uint32_t* adc_buffer);
 static void i2c_ms5611_delay_s(u16); 
-
-
 static u8 i2c_ms5611_send_cmd_s(uint8_t cmd); 
 static u8 i2c_ms5611_timeout_usercallback_s(u8 error_code);
 static uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num);
@@ -55,25 +52,6 @@ void i2c_ms5611_init_s(void)
 
 
 
-/**
- *  名称: i2c_ms5611_check_s
- *
- *  描述：ms5611设备检测连接状况
- *
- */
-u8 i2c_ms5611_check_s(void)
-{
-	return SUCCESS; 
-}
-	
-
-
-
-
-
-
-
-
 
 /**
  * 
@@ -84,14 +62,11 @@ u8 i2c_ms5611_check_s(void)
  */
 void i2c_ms5611_read_calibration_s(uint8_t cx, uint16_t* cx_buffer)
 {
-	uint8_t cx_pre_get[2] = {1, 1}; 																	// 分别获取低8bit 高8bit
+	uint8_t cx_pre_get[2] = {1, 1}; 															  		// 分别获取低8bit 高8bit
 	i2c_ms5611_send_cmd_s(cx);																					// 发送指令	
 	i2c_ms5611_receive_data_s(cx_pre_get, 2);
-	*cx_buffer = ((u16)cx_pre_get[0] << 8) | ((u16)cx_pre_get[1]);    // 整合到u16当中
+	*cx_buffer = ((u16)cx_pre_get[0] << 8) | ((u16)cx_pre_get[1]);      // 整合到u16当中
 }
-
-
-
 
 
 
@@ -112,16 +87,7 @@ void i2c_ms5611_read_adc_s(uint8_t config, uint32_t* adc_buffer)//形参一个字节，
 	i2c_ms5611_send_cmd_s(MS5611_ADC_READ); 													// 发送MS5611_ADC_READ指令
 	i2c_ms5611_receive_data_s(adc_pre, 3);
 	*adc_buffer = (adc_pre[0] << 16) | (adc_pre[1] << 8) | (adc_pre[2]); 
-	//printf("adcx: %d\t\n", *adc_buffer);
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -143,8 +109,7 @@ int32_t i2c_ms5611_calculate_s(void)
 	u32 digital_pressure, digital_temp;
 	
 	i2c_ms5611_init_s();
-	if(i2c_ms5611_check_s())										// 连接状况良好
-	{
+	
 		i2c_ms5611_read_calibration_s(PROM_READ_C1, &(coefficient[0]));	//C1: SENS_T1 u16
 		i2c_ms5611_read_calibration_s(PROM_READ_C2, &(coefficient[1]));	//C2: OFF_T1 u16						
 		i2c_ms5611_read_calibration_s(PROM_READ_C3, &(coefficient[2]));	//C3: TCS u16
@@ -187,7 +152,6 @@ int32_t i2c_ms5611_calculate_s(void)
     printf("MS5611  Press (mbar): %.2f  \n", (float)pressure/10);
 		
 		return pressure;
-	}
 	
 	return 0; 												 												 												 						// 失败
 }
@@ -242,7 +206,7 @@ u8 i2c_ms5611_send_cmd_s(u8 cmd)
 {
 	u32 i2c_wait_timeout = I2C_WAIT_TIMEOUT; 
 	
-	ms5611_i2c_start_s();//1 产生起始信号	
+	ms5611_i2c_start_s();																//1 产生起始信号	
 	
 	ms5611_i2c_send_byte_s(MS5611_SLAVE_WRITE_ADDRESS); //2 发送7位从机设备地址，并检查是否收到地址应答
 	
@@ -258,7 +222,7 @@ u8 i2c_ms5611_send_cmd_s(u8 cmd)
 	
 	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
-	ms5611_i2c_send_byte_s(cmd);		//3 发送一个字节指令
+	ms5611_i2c_send_byte_s(cmd);												//3 发送一个字节指令
 	
 	while(ms5611_i2c_wait_ack_s())
 	{
@@ -269,7 +233,7 @@ u8 i2c_ms5611_send_cmd_s(u8 cmd)
 		i2c_wait_timeout--;
 	}
 
-	ms5611_i2c_stop_s(); // 4 终止信号
+	ms5611_i2c_stop_s(); 																// 4 终止信号
 	return SUCCESS;
 }
 
@@ -291,17 +255,11 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 {	
 	uint32_t i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
-	while(0) // 改成int引脚检测
-  {
-    if((i2c_wait_timeout--) == 0) return i2c_ms5611_timeout_usercallback_s(0);
-  }
-	
 	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
+	ms5611_i2c_start_s();  																// 1 起始条件
 	
-	ms5611_i2c_start_s();  // 1 起始条件
-	
-	ms5611_i2c_send_byte_s(MS5611_SLAVE_READ_ADDRESS); // 2 发送从机设备地址
+	ms5611_i2c_send_byte_s(MS5611_SLAVE_READ_ADDRESS); 		// 2 发送从机设备地址
 	while(ms5611_i2c_wait_ack_s())
 	{
 		if(i2c_wait_timeout == 0)
@@ -312,14 +270,14 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 	}
 	
 	
-	while(num)															// 循环读取
+	while(num)																						// 循环读取
 	{
 		if(num == 1)
 		{
-			*buffer = ms5611_i2c_read_byte_s(0);//最后一次收到发送Nack
+			*buffer = ms5611_i2c_read_byte_s(0);							//最后一次收到发送Nack
 			ms5611_i2c_stop_s(); 
 		}
-		else																  //接收到数据并发送Ack信号
+		else																  							//接收到数据并发送Ack信号
     {      
       *buffer = ms5611_i2c_read_byte_s(1);
 
@@ -330,7 +288,7 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 	}
 	
 
-	return SUCCESS;//成功读出数据
+	return SUCCESS;																				//成功读出数据
 }
 	
 

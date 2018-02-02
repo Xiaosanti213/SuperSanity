@@ -17,17 +17,9 @@
 #include "sensors.h"
 #include "app_cfg.h"
 
-
 #include <stdio.h>
-
-
-
-
-//static void nrf_read_to_motors(u16* rc_command);
 		
 
-
-	
 	
 	
 
@@ -42,8 +34,6 @@
 void sensors_init(void)
 {
 	debug_usart_init();						// 调试串口	
-	//os_tick_init(); 						// 配置系统滴答时钟
-	
 	status_led_gpio_config();			// 指示灯LED
 	
   i2c_mpu6050_init_s();					// 写入配置参数
@@ -51,9 +41,10 @@ void sensors_init(void)
   i2c_mpu6050_init_mag_s();
   i2c_ms5611_init_s();
 	
-	spi_nrf_init();								// 接收摇杆数据
+	spi_nrf_init();								
 	spi_nrf_rx_mode();
 	tim_config(); 
+	
 }
 
 
@@ -66,25 +57,86 @@ void sensors_init(void)
  * 描述：读取传感器数据
  *
  */ 
-void get_sensors_data(sd* sdata)
+void get_sensors_data(sd* sdata, sc* calib_data)
 {
+	u8 axis = 0;
+	float smooth_factor = 1.5;
+	static int16_t acc_filtered[3] = {0,0,0};
+	//读取数据
+	i2c_mpu6050_read_acc_s(sdata->acc);
+	i2c_mpu6050_read_gyro_s(sdata->gyro);
+	i2c_mpu6050_read_mag_s(sdata->mag); 
+	sdata->press = i2c_ms5611_calculate_s();
+	nrf_read_to_motors(sdata->rc_command);
 	
-  //if(i2c_mpu6050_check_s() && i2c_ms5611_calculate_s())
-	//if(i2c_mpu6050_check_s())
-	//{
-			i2c_mpu6050_read_acc_s(sdata->acc);
-			i2c_mpu6050_read_gyro_s(sdata->gyro);
-			i2c_mpu6050_read_temp_s(sdata->temp);
-		
-			//printf("HMC5883L数据： \n");
-	    i2c_mpu6050_read_mag_s(sdata->mag); 
-	    //printf("magx: %d%s%d%s%d", sd->mag[0], "magy: ", sd->mag[1], "magz: ", sd->mag[2]);
-			sdata->press = i2c_ms5611_calculate_s();
-			//printf("MS5611数据： \n");
-			//printf("press: %d\n", sd->press);
-	//}
-			nrf_read_to_motors(sdata->rc_command);
+	//校准修正
+	for(; axis<3; axis--)
+  {
+		sdata->acc[axis] -= calib_data->acc_calib[axis];
+		sdata->gyro[axis] -= calib_data->gyro_calib[axis];
+	}
+	
+	// 迭代加计平滑滤波修正
+	for(; axis<3; axis--)
+	{
+		acc_filtered[axis] -= acc_filtered[axis]/smooth_factor;
+		sdata->acc[axis] = acc_filtered[axis] - sdata->acc[axis]/smooth_factor;
+	}
 }
+
+
+
+
+
+
+/**
+ *
+ * 名称：sensors_calibration
+ *
+ * 描述：传感器数据校准
+ *
+ */ 
+void sensors_calibration(sc* s_calib, sd* s_data)
+{
+	u16 acc_sum[3] = {0,0,0};
+	u16 gyro_sum[3] = {0,0,0};
+	u16 calib_flag = 512;
+	u8 axis = 0;
+  for(; axis<3 ; axis++)
+	{
+		s_calib->acc_calib[axis] = 0;
+		s_calib->gyro_calib[axis] = 0;
+		for(;calib_flag; calib_flag--)
+		{
+			i2c_mpu6050_read_acc_s(s_data->acc);//读取原生数据
+			i2c_mpu6050_read_gyro_s(s_data->gyro);
+			acc_sum[axis] += s_data->acc[axis];
+			gyro_sum[axis] += s_data->gyro[axis];
+		}
+		s_calib->acc_calib[axis] = acc_sum[axis]>>9;//512次取平均
+		s_calib->gyro_calib[axis] = gyro_sum[axis]>>9;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /**
@@ -100,7 +152,6 @@ void nrf_read_to_motors(u16* rc_command)
 	/*判断接收状态 收到数据*/
 	if(spi_nrf_rx_packet(rxbuf))
 	{
-		//STATUS_LED_ON;//指示灯表示当前接收到数据
 		//下面这个步骤已经将motor值映射到了1000~2000上
 		rc_command[0] = (float)(rxbuf[1]<<8 | rxbuf[0])/4096*1000 + 1000;
 		rc_command[1] = (float)(rxbuf[3]<<8 | rxbuf[2])/4096*1000 + 1000;
@@ -121,10 +172,10 @@ void nrf_read_to_motors(u16* rc_command)
 
 
     //printf("\r\n 从机端接收到遥控器杆量数据：\n");
-	  //printf("RA右手副翼：%d%s", rc_command[0], "\n");
-	  //printf("LE左手升降：%d%s", rc_command[1], "\n");
-	  //printf("RT右手油门：%d%s", rc_command[2], "\n");
-	  //printf("LR左手方向：%d%s", rc_command[3], "\n");		
+	  printf("RA右手副翼：%d%s", rc_command[0], "\n");
+	  printf("LE左手升降：%d%s", rc_command[1], "\n");
+	  printf("RT右手油门：%d%s", rc_command[2], "\n");
+	  printf("LR左手方向：%d%s", rc_command[3], "\n");		
 	} 
   else 
 		//printf("数据接收失败，请检查线路连接...\n");

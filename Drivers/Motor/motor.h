@@ -20,7 +20,7 @@
 
 void write_mini_motors(u16* motor);// 空心杯电机
 void write_motors(u16* motor);// 普通无刷电机
-void mix_table(u16*, sd*);
+void mix_table(int16_t*, sd*);
  
 void go_arm_check(u16*);
 

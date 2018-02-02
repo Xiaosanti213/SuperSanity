@@ -8,19 +8,17 @@
  
  
 #include "stm32f10x.h" 
- 
-#include "mpu6050.h"
 #include "board_config.h"
+#include "mpu6050.h"
 #include "hmc5883l.h" 
 #include "api_i2c.h"
-
 #include <stdio.h>
+
 
  
  
 static void i2c_mpu6050_delay_s(void); 
 static uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte);
-//static uint8_t i2c_s	end_data(uint8_t reg, uint8_t* buffer, u8 num);
 static uint8_t i2c_receive_data_s(u8 reg, uint8_t* byte_add, uint8_t num);
 static uint8_t i2c_timeout_usercallback_s(uint8_t error_code);
 
@@ -69,7 +67,6 @@ uint8_t i2c_mpu6050_check_s(void)
 {
 	uint8_t value = 0;
 	i2c_receive_data_s(MPU6050_RA_WHO_AM_I, &value, 1);
-	//printf("value = %d\n", value);
 	if(value == 0x68)
 	{
 		//printf("MPU6050 is working...\n");
@@ -93,10 +90,10 @@ uint8_t i2c_mpu6050_check_s(void)
 void i2c_mpu6050_read_acc_s(float* acc)
 {
 	
-	int16_t acc_temp[3];//这中间变量是按位计算时候担心float存储方式不一致
-	u8 buffer[6];//认为这个数据有无符号无所谓，需要表达的才有意义
-	i2c_receive_data_s(MPU6050_RA_ACCEL_XOUT_H, buffer, 6);
-	//读取加计数据首地址
+	int16_t acc_temp[3];//这个大小可以优化的
+	u8 buffer[6];
+	i2c_receive_data_s(MPU6050_RA_ACCEL_XOUT_H, buffer, 6);//读取加计数据首地址
+	
 	acc_temp[0] = (buffer[0]<<8) | buffer[1];
 	acc_temp[1] = (buffer[2]<<8) | buffer[3];
 	acc_temp[2] = (buffer[4]<<8) | buffer[5];
@@ -126,8 +123,8 @@ void i2c_mpu6050_read_gyro_s(float* gyro)
 {
 	int16_t gyro_temp[3];
 	uint8_t buffer[6];
-	i2c_receive_data_s(MPU6050_RA_GYRO_XOUT_H, buffer, 6);
-	//读取陀螺仪数据首地址
+	i2c_receive_data_s(MPU6050_RA_GYRO_XOUT_H, buffer, 6);//读取陀螺仪数据首地址
+	
 	gyro_temp[0] = (buffer[0]<<8) | buffer[1];
 	gyro_temp[1] = (buffer[2]<<8) | buffer[3];
 	gyro_temp[2] = (buffer[4]<<8) | buffer[5];
@@ -161,13 +158,10 @@ void i2c_mpu6050_read_temp_s(float* temp)
 	
 	u8 buffer[2];
 	int16_t temp_quant;
-	i2c_receive_data_s(MPU6050_RA_TEMP_OUT_H, buffer, 2);
-	//读取温度数据首地址
-	temp_quant = (buffer[0]<<8) | buffer[1];
-	//转换成摄氏温度
-	temp[0] = (double)temp_quant/340.0 + 36.53;
-	//printf("MPU6050温度: %.2f%s", temp[0], "\n");
-
+	i2c_receive_data_s(MPU6050_RA_TEMP_OUT_H, buffer, 2); //读取温度数据首地址
+	temp_quant = (buffer[0]<<8) | buffer[1];					
+	temp[0] = (double)temp_quant/340.0 + 36.53;				//转换成摄氏温度
+	
 }
 
 
@@ -182,13 +176,13 @@ void i2c_mpu6050_read_temp_s(float* temp)
  *
  *  名称： i2c_mpu6050_delay_s
  *
- *  描述： mpu6050上电延时
+ *  描述： mpu6050上电延时，防止数据出错
  *
  */
 void i2c_mpu6050_delay_s(void)
 {
 	uint16_t i=0,j=0;
-  //在初始化之前要延时一段时间，若没有延时，则断电后再上电数据可能会出错
+
   for(i=0; i < 1000;i++)
   {
     for(j=0; j < 1000;j++)
@@ -295,16 +289,13 @@ void i2c_mpu6050_init_mag_s(void)
 void i2c_mpu6050_read_mag_s(float* mag)
 {
 	int16_t mag_temp[3];
-	uint8_t buffer[6];
+	u8 buffer[6];
 	// 使能数据传输之后，即可直接通过读取6050对应寄存器获得磁罗盘数据
 	i2c_receive_data_s(MPU6050_RA_EXT_SENS_DATA_00, buffer, 6);
 	// 地址MPU6050_RA_EXT_SENS_DATA_00: Reg73~96
 	mag_temp[0] = (buffer[0]<<8) | buffer[1];   //magX-MB: 0x03 LB: 0x04
 	mag_temp[1] = (buffer[2]<<8) | buffer[3];   //magZ-MB: 0x05 LB: 0x06
 	mag_temp[2] = (buffer[4]<<8) | buffer[5];   //magY-MB: 0x07 LB: 0x08
-  printf("%d\n", mag_temp[0]);
-	printf("%d\n", mag_temp[1]);
-	printf("%d\n", mag_temp[2]);
 	
 	// 增益设置为230
   mag[0] = (float)mag_temp[0] * 4.35;
@@ -332,10 +323,8 @@ uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte)
 
 	uint32_t i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
-	mpu6050_i2c_start_s();//1 产生起始信号	
-	
-	//i2c_wait_timeout = I2C_WAIT_TIMEOUT;
-	
+	mpu6050_i2c_start_s();																//1 产生起始信号	
+		
 	mpu6050_i2c_send_byte_s(MPU6050_SLAVE_WRITE_ADDRESS); //2 发送7位从机设备地址，并检查是否收到地址应答
 	
 	while(mpu6050_i2c_wait_ack_s())
@@ -350,7 +339,7 @@ uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte)
 	
 	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
-	mpu6050_i2c_send_byte_s(reg);		//3 发送一个字节地址(MPU6050 Single-Byte Write Sequence)
+	mpu6050_i2c_send_byte_s(reg);													//3 发送一个字节地址(MPU6050 Single-Byte Write Sequence)
 	
 	while(mpu6050_i2c_wait_ack_s())
 	{
@@ -361,7 +350,7 @@ uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte)
 		i2c_wait_timeout--;
 	}
 
-	mpu6050_i2c_send_byte_s(byte);		//4 发送一个字节数据
+	mpu6050_i2c_send_byte_s(byte);												//4 发送一个字节数据
 	
 	while(mpu6050_i2c_wait_ack_s())
 	{
@@ -372,7 +361,7 @@ uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte)
 		i2c_wait_timeout--;
 	}
 		
-	mpu6050_i2c_stop_s(); //5 停止信号
+	mpu6050_i2c_stop_s(); 																//5 停止信号
 	
 	return SUCCESS;
 }
@@ -395,13 +384,7 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 
 	uint32_t i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
-	//while(I2C_GetFlagStatus(I2Cx, I2C_FLAG_BUSY)) // 检测是否正忙
-  //{
-  //  if((i2c_wait_timeout--) == 0) return i2c_timeout_usercallback(0);
-  // }
-
-	
-	mpu6050_i2c_start_s();//1 产生起始信号	
+	mpu6050_i2c_start_s();																 //1 产生起始信号	
 	
 	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
@@ -416,10 +399,9 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 		i2c_wait_timeout--;
 	}
 	
-	
 	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 	
-	mpu6050_i2c_send_byte_s(reg);		//3 发送一个字节地址(MPU6050 Single-Byte Write Sequence)
+	mpu6050_i2c_send_byte_s(reg);													//3 发送一个字节地址(MPU6050 Single-Byte Write Sequence)
 	
 	while(mpu6050_i2c_wait_ack_s())
 	{
@@ -432,7 +414,7 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 
 	for(index = 0; index < num; index++)
 	{
-		mpu6050_i2c_send_byte_s(*buffer);		//4 发送一个字节数据
+		mpu6050_i2c_send_byte_s(*buffer);										//4 发送一个字节数据
 		
 		while(mpu6050_i2c_wait_ack_s())
 		{
@@ -442,10 +424,10 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 			}
 			i2c_wait_timeout--;
 		}
-		buffer++;//这块如果没有进入下一次循环是否会有危险
+		buffer++;
 	}
 	
-	mpu6050_i2c_stop_s(); //5 停止信号
+	mpu6050_i2c_stop_s(); 																//5 停止信号
 	
 	return SUCCESS;
 }
@@ -467,7 +449,7 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 {
 	uint32_t i2c_wait_timeout = I2C_WAIT_TIMEOUT;
 
-	mpu6050_i2c_start_s();  // 1 起始条件
+	mpu6050_i2c_start_s();  															// 1 起始条件
 	
 	mpu6050_i2c_send_byte_s(MPU6050_SLAVE_WRITE_ADDRESS); // 2 发送从机设备地址
 	while(mpu6050_i2c_wait_ack_s())
@@ -482,7 +464,7 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 	
 	
 	i2c_wait_timeout = I2C_WAIT_TIMEOUT;	
-	mpu6050_i2c_send_byte_s(reg);		//3 发送一个字节地址
+	mpu6050_i2c_send_byte_s(reg);													//3 发送一个字节地址
 	
 	while(mpu6050_i2c_wait_ack_s())
 	{
@@ -496,9 +478,9 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 	
 	
 	i2c_wait_timeout = I2C_WAIT_TIMEOUT;
-	mpu6050_i2c_start_s();  // 4 Burst Read Sequence模式起始条件
+	mpu6050_i2c_start_s();  															// 4 Burst Read Sequence模式起始条件
 
-	mpu6050_i2c_send_byte_s(MPU6050_SLAVE_READ_ADDRESS); // 5 发送从机设备地址
+	mpu6050_i2c_send_byte_s(MPU6050_SLAVE_READ_ADDRESS); 	// 5 发送从机设备地址
 	while(mpu6050_i2c_wait_ack_s())
 	{
 		if(i2c_wait_timeout == 0)
@@ -508,19 +490,16 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 		i2c_wait_timeout--;
 	}
 	
-	while(num)// 循环读取
+	while(num)																// 循环读取
 	{
-		if (num == 1)//读取最后一字节数据
+		if (num == 1)														//读取最后一字节数据
 		{
-			*buffer = mpu6050_i2c_read_byte_s(0);//最后一次设置为Nack模式产生Nack信号
+			*buffer = mpu6050_i2c_read_byte_s(0); //产生Nack信号
 			mpu6050_i2c_stop_s(); 
 		}
-    else // 这块可能需要int引脚判断读取
+    else 
     {      
-      /* Read a byte from the slave */
-      *buffer = mpu6050_i2c_read_byte_s(1);
-			// 产生应答信号
-      /* Point to the next location where the byte read will be saved */
+      *buffer = mpu6050_i2c_read_byte_s(1); //产生ack信号
       buffer++; 
       
     }
@@ -528,7 +507,7 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 	}
 	
 	
-	return SUCCESS;//成功读出数据
+	return SUCCESS;														//成功读出数据
 }
 	
 

@@ -14,7 +14,7 @@
 
 
 void set_reference(const u16* rc_commands, float* reference);
-void attitude_control(const ad attitude_data, const float* reference, u16* output);
+void attitude_control(ad attitude_data, const float* reference, int16_t* output);
 
 
 

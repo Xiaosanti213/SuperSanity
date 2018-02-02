@@ -34,7 +34,6 @@
  
  
  
- static void rc_spi_config(void);
  
 /************************************************************************************
  * 
@@ -277,89 +276,6 @@
 
 
 
-
-/************************************************************************************
- * 
- * 名称: ms5611_i2c_gpio_config
- *
- * 描述: 配置I2C对应的PB10~PB11引脚
- *   
- ************************************************************************************/
-
-  static void ms5611_i2c_gpio_config(void)
- {
-	 
-	 GPIO_InitTypeDef GPIO_InitStructure;
-	 //开启端口外设时钟，并没有封装
-	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE); 
-	 
-	 
-	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU ;
-	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	 
-	 // 中断引脚是普通输出模式----这个电路图中并没有连接
-   GPIO_InitStructure.GPIO_Pin = MS5611_I2C_INT_PIN;
-	 GPIO_Init(MS5611_I2C_PORT, &GPIO_InitStructure); 
-	 
-	 // 其他引脚配置复用模式I2C必须采用AF_OD模式
-	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
-	 GPIO_InitStructure.GPIO_Pin = MS5611_I2C_SCL_PIN;
-	 GPIO_Init(MS5611_I2C_PORT, &GPIO_InitStructure); 
-	 
-	 GPIO_InitStructure.GPIO_Pin = MS5611_I2C_SDA_PIN;
-	 GPIO_Init(MS5611_I2C_PORT, &GPIO_InitStructure); 
- 
- 
- }
- 
- 
- 
- 
- 
- 
- 
- 
- 
- /************************************************************************************
- * 
- * 名称: ms5611_i2c_config
- *
- * 描述: 配置MS5611与主机通过I2C连接
- *   
- ************************************************************************************/
-
-  static void ms5611_i2c_config(void)
- {
-	 
-	I2C_InitTypeDef  I2C_InitStructure;
-	 
-	// 使能时钟
-  MS5611_I2C_APB1Clock_FUN(RCC_APB1Periph_I2C2, ENABLE);
-	 
-	// 设置可以发送响应信号
-	I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-	// 设置从机地址位数
-  I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	// 设置SCL线高低电平占空比，一般要求不会很严格
-  I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
-	// 不需要在此处区分主从模式
-  I2C_InitStructure.I2C_Mode  = I2C_Mode_I2C;
-	// 设置通讯速率100kHz
-  I2C_InitStructure.I2C_ClockSpeed = 100000;
-	 // 主机地址
-  I2C_InitStructure.I2C_OwnAddress1 = 0x0A;
-
-	 
-	I2C_Init(MS5611_I2C, &I2C_InitStructure); 
-	 
-	// 使能I2C1外设
-	I2C_Cmd(MS5611_I2C, ENABLE);
- 
- 
- }
- 
- 
- 
  
 
 /************************************************************************************
@@ -478,84 +394,6 @@
  }
 
 
-
-/************************************************************************************
- * 
- * 名称: mpu6050_i2c_gpio_config
- *
- * 描述: 配置I2C对应的PB5~PB7引脚
- *   
- ************************************************************************************/
-
-  static void mpu6050_i2c_gpio_config(void)
- {
-	 
-	 GPIO_InitTypeDef GPIO_InitStructure;
-	 
-	 RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOB, ENABLE );	 
-	  
-	 // 中断引脚是上拉输入模式
-	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_INT_PIN;
-	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	 GPIO_Init(GPIOB, &GPIO_InitStructure); 
-	 
-	 // 其他引脚配置复用开漏模式	 
-	 GPIO_InitStructure.GPIO_Pin = MPU6050_I2C_SCL_PIN|MPU6050_I2C_SDA_PIN;
-   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;	       
-   GPIO_Init(GPIOB, &GPIO_InitStructure); 
- 
- }
- 
- 
- 
- 
- 
- 
- /************************************************************************************
- * 
- * 名称: mpu6050_i2c_config
- *
- * 描述: 配置与MPU6050传感器I2C连接
- *   
- ************************************************************************************/
-
-  static void mpu6050_i2c_config(void)
- {
-	 
-	// 使能I2C2外设
-	//I2C_Cmd(MPU6050_I2C, ENABLE);
-	I2C_InitTypeDef  I2C_InitStructure; 
-	 
-  RCC_APB1PeriphClockCmd ( RCC_APB1Periph_I2C1, ENABLE );
-
-  /* I2C 配置 */
-  I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-	
-	/* 高电平数据稳定，低电平数据变化 SCL 时钟线的占空比 */
-  I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
-	
-  I2C_InitStructure.I2C_OwnAddress1 =0X0A; 
-  I2C_InitStructure.I2C_Ack = I2C_Ack_Enable ;
-	
-	/* I2C的寻址模式 */
-  I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	
-	/* 通信速率 */
-  I2C_InitStructure.I2C_ClockSpeed = 100000;
-  
-	/* I2C1 初始化 */
-  I2C_Init(I2C1, &I2C_InitStructure);
-  
-	/* 使能 I2C1 */
-  I2C_Cmd(I2C1, ENABLE); 
- 
- }
- 
- 
- 
- 
- 
  
  
  
@@ -620,6 +458,9 @@
  }
  
  
+
+ 
+ 
  
  /************************************************************************************
  * 
@@ -634,17 +475,6 @@
 	  pwm_tim_config();
  }
  
- void mpu6050_config(void)
- {
-	 mpu6050_i2c_gpio_config();
-	 mpu6050_i2c_config();
- }
- 
- void ms5611_config(void)
- {
-	 ms5611_i2c_gpio_config(); 
-	 ms5611_i2c_config();
- }
  
  void nrf24l01_config(void)
  {

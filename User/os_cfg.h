@@ -56,7 +56,6 @@
 #define OS_TASK_STAT_STK_SIZE   128    /* Statistics task stack size (# of OS_STK wide entries)        */
 #define OS_TASK_IDLE_STK_SIZE   128    /* Idle       task stack size (# of OS_STK wide entries)        */
 
-
                                        /* --------------------- TASK MANAGEMENT ---------------------- */
 #define OS_TASK_CHANGE_PRIO_EN    1    /*     Include code for OSTaskChangePrio()                      */
 #define OS_TASK_CREATE_EN         1    /*     Include code for OSTaskCreate()                          */

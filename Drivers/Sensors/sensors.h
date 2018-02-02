@@ -21,14 +21,28 @@ typedef struct sensors_data
 
 
 
+
+typedef struct sensors_calib
+{
+	u8 acc_calib[3];
+	u8 gyro_calib[3]; 
+}sc; 
+
+
+
+
+
+
+
+
+
+
 void sensors_init(void);
-void get_sensors_data(struct sensors_data* sd);
+void get_sensors_data(sd*, sc*);
 void init_recog_motors(void);
 void go_disarm(void);
 void nrf_read_to_motors(u16* rc_command);
-
-
-
+void sensors_calibration(sc* s_calib, sd* s_data);
 
 
 

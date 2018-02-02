@@ -10,8 +10,7 @@
  #include "attitude_estimate.h" 
  #include <stm32f10x.h>
  #include <math.h>
- #include <stdlib.h>
- 
+ #include <stdio.h>
  
  
  
@@ -20,14 +19,11 @@
  static void matrix_multiply(const float mat[3][3], const float* vec1, float* vec2); 
  static void normalize(float*);
  static float fast_inv_sqrt(float); 
- static void calculate_rot_matrix(float*, float*, float rot_matrix[3][3]); 
  static float dot_product(const float*, const float*);
  static void cross_product(const float* vec1, const float* vec2, float* cp);
  static void rodrigue_rotation_matrix(float* rot_axis, const float rot_angle, float rot_matrix[3][3]);
- static void rot_matrix_to_euler(float R[3][3], float* euler_angle);
  static float atan2_numerical(float y, float x);
  static float abs_c_float_version(float);
- static void rot_matrix_to_euler(float R[3][3], float* euler_angle);
  
  
  
@@ -45,13 +41,13 @@
  {
 	 float temp;
 	 // 保证三个数据依次是XYZ轴
-	 temp = sensors_data->gyro[1];
-	 sensors_data->gyro[1] = sensors_data->gyro[2];
-	 sensors_data->gyro[2] = temp;
+	 temp = sensors_data->gyro[0];
+	 sensors_data->gyro[0] = sensors_data->gyro[1];
+	 sensors_data->gyro[1] = temp;
 	 
-	 temp = -sensors_data->acc[1];
-	 sensors_data->acc[1] = -sensors_data->acc[2];
-	 sensors_data->acc[2] = temp;
+	 temp = -sensors_data->acc[0];
+	 sensors_data->acc[0] = -sensors_data->acc[1];
+	 sensors_data->acc[1] = temp;
 	 return ;
  }
  
@@ -70,19 +66,17 @@
  {
 	 float euler_delta[3];						  								//三轴分别：roll pitch yaw
 	 float rot_matrix[3][3];						  						  //旋转矩阵2维数组
-	 float calibrated_att_init[3] = {0,0,1}; 						//这个应该使用校准之后的姿态矢量值
 	 static float att_est[3] = {0,0,1};	  	            //只初始化1次
 	 float att_gyro[3];
-	 u8 w_gyro2acc = 10;                 							  //陀螺仪相对加计比值
+	 u8 w_gyro2acc = 20;                 							  //陀螺仪相对加计比值
 	 u8 i = 0;
 	 float deltaT = 0.02;								  							//这个如果能通过计算运行循环时间解算就比较好了
-	 float rotmat_till_now[3][3];
-	 float euler_angle[3];
 	 
 	 sensors_data_direction_correct(sensors_data);      //传感器方向对正
 	 for(; i < 3; i++)
 	 {
 		 euler_delta[i] = sensors_data->gyro[i]*deltaT;   //计算相比较上次解算的旋转欧拉角
+	   attitude_data->angle_rate[i] = sensors_data->gyro[i]; 
 	 }
 	 euler_to_rotmatrix(euler_delta, rot_matrix);   		//欧拉角计算旋转矩阵
 	 matrix_multiply(rot_matrix, att_est, att_gyro);		//由前一次估计结果迭代得到当前姿态矢量
@@ -92,8 +86,12 @@
 			att_est[i] = (w_gyro2acc*att_gyro[i]+sensors_data->acc[i])/(1+w_gyro2acc);
 	 }
 	 
-	 calculate_rot_matrix(calibrated_att_init, att_est, rotmat_till_now);
-	 rot_matrix_to_euler(rotmat_till_now, euler_angle);//计算当前姿态角
+	 //printf("Euler   Angle (deg ): %.2f%s%.2f%s%.2f%s",attitude_data->euler_angle[0], "  ",attitude_data->euler_angle[1], "  ",attitude_data->euler_angle[2], "  \n");
+	 //printf("Angle   Rate  (deg ): %.2f%s%.2f%s%.2f%s",attitude_data->angle_rate[0], "  ",attitude_data->angle_rate[1], "  ",attitude_data->angle_rate[2], "  \n");
+	 
+	 attitude_data->euler_angle[0] = atan2_numerical(att_est[1],1/fast_inv_sqrt(att_est[0]*att_est[0]+att_est[2]*att_est[2]))/10;
+	 attitude_data->euler_angle[1] = atan2_numerical(att_est[0], att_est[2])/10;	 
+	 
 	 return ;
  }
  
@@ -141,7 +139,7 @@
  * 描述：矩阵乘向量
  *
  */ 
- void matrix_multiply(const float mat[3][3], const float* vec1, float* vec2)//??
+ void matrix_multiply(const float mat[3][3], const float* vec1, float* vec2)//
 {
 	vec2[0] = mat[0][0]*vec1[0]+mat[0][1]*vec1[1]+mat[0][2]*vec1[2];
   vec2[1] = mat[1][0]*vec1[0]+mat[1][1]*vec1[1]+mat[1][2]*vec1[2];
@@ -219,10 +217,11 @@
  */ 
  void calculate_rot_matrix(float* vec1, float* vec2, float rot_matrix[3][3])
  {
-	 float rot_angle = acos(dot_product(vec1, vec2));
 	 float rot_axis[3];
+	 float rot_angle;
 	 normalize(vec1);
 	 normalize(vec2);
+	 rot_angle = acos(dot_product(vec1, vec2));
 	 cross_product(vec1, vec2, rot_axis);//无需正交化，正交化在罗德里格旋转中完成
 	 rodrigue_rotation_matrix(rot_axis, rot_angle, rot_matrix);
 	 return ;										

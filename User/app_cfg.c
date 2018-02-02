@@ -16,19 +16,15 @@
  #include "core_cm3.h"
  #include "misc.h"
  #include "ucos_ii.h" 
+ #include "sensors.h"
  
  
+ static void os_tick_init(void);
  
- 
- 
- 
- 
- 
- static __IO uint32_t counts = 0;
 
  /************************************************************************************
  * 
- * 名称: os_tick_init
+ * 名称: os_tick_init-
  *
  * 描述: 操作系统滴答时钟初始化
  *   
@@ -36,44 +32,16 @@
  
  void os_tick_init(void)
  {
-	 RCC_ClocksTypeDef RCC_ClocksStructure;
-	 RCC_GetClocksFreq(&RCC_ClocksStructure); 
-	 // 获取系统时钟频率:72 000 000Hz (计数速率) 实参是每计数多少即产生1次中断
-	 if (SysTick_Config(RCC_ClocksStructure.HCLK_Frequency/OS_TICKS_PER_SEC))
-	 //这块经过测试215不通过216通过，这块不能这么配置，配置完即使能
-	 {
-		 //这个捕获错误：一旦config函数返回非0值，进入死循环
-		 while(1);
-	 }
-	 // 设置LOAD寄存器（计数器重装载数值）使能中断计数, 中断周期1ms
-	 printf("Systick is working...\n");
+	 //获取系统时钟频率:72 000 000Hz (计数速率)
+	 SysTick_Config(72000000uL/OS_TICKS_PER_SEC);
  }
+ 
+ 
  
  
  
  
  /************************************************************************************
- * 
- * 名称: delay_ms
- *
- * 描述: 操作系统滴答时钟延时函数
- *   
- ************************************************************************************/
- void delay_ms(__IO uint32_t delay_time_ms)//延时多少ms
- {
-    counts = delay_time_ms;
-	 
-	 //使能滴答定时器  
- 	  SysTick->CTRL |=  SysTick_CTRL_ENABLE_Msk;
-	 
- 	  while(counts != 0);
- }
- 
- 
- 
- 
- 
-  /************************************************************************************
  * 
  * 名称: delay_us
  *
@@ -82,7 +50,7 @@
  ************************************************************************************/
  void delay_us(u32 i)
  {
-      u32 temp;
+     u32 temp;
      SysTick->LOAD=9*i;          
      SysTick->CTRL=0X01;          
      SysTick->VAL=0;                 
@@ -102,18 +70,28 @@
  
  
  
+ 
  /************************************************************************************
  * 
- * 名称: count_decrement
+ * 名称: controller_init
  *
- * 描述: 操作系统滴答时钟调用递减函数
+ * 描述: 飞控初始化
  *   
- ************************************************************************************/
- void count_decrement(void)
+ ************************************************************************************/ 
+ void controller_init(void)
  {
-	 if (counts != 0x00)
-	 {counts--;}
+	 OS_CPU_SR cpu_sr=0;
+	 OS_ENTER_CRITICAL();
+	 sensors_init();
+	 os_tick_init();
+	 OS_EXIT_CRITICAL();
  }
+ 
+ 
+ 
+ 
+ 
+ 
  
  
  

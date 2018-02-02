@@ -268,7 +268,10 @@
  #define						STATUS_LED_ON												GPIO_SetBits(STATUS_LED_PORT, STATUS_LED_PIN)
  #define						STATUS_LED_OFF											GPIO_ResetBits(STATUS_LED_PORT, STATUS_LED_PIN)
   
-
+ #define						STATUS_LED1_PORT										GPIOB
+ #define						STATUS_LED1_PIN											GPIO_Pin_7
+ #define						STATUS_LED1_ON											GPIO_SetBits(STATUS_LED_PORT, STATUS_LED_PIN)
+ #define						STATUS_LED1_OFF											GPIO_ResetBits(STATUS_LED_PORT, STATUS_LED_PIN)
 
 
 /************************************************************************************
@@ -281,8 +284,6 @@
 
   void gpio_clk_config(void);
 	void tim_config(void);
-  void mpu6050_config(void);	
-  void ms5611_config(void);
   void nrf24l01_config(void);
   void usb_config(void);
   void status_led_gpio_config(void);

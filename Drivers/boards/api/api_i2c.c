@@ -140,19 +140,6 @@ void mpu6050_i2c_send_byte_s(uint8_t byte)
 
 
 
-//void ackfun(void)
-//{
-//	uint8_t i;
-	//MPU6050_I2C_SDA_0_FUN();	/* CPU驱动SDA = 0 */
-	//for (i = 0; i < 10; i++);
-	//MPU6050_I2C_SCL_1_FUN();	/* CPU产生1个时钟 */
-	//for (i = 0; i < 10; i++);
-	//MPU6050_I2C_SCL_0_FUN();
-	//for (i = 0; i < 10; i++);
-	//MPU6050_I2C_SDA_1_FUN();	/* CPU释放SDA总线 */
-//}
-
-
 /**
  *
  *  名称： mpu6050_i2c_read_byte_s
@@ -182,7 +169,6 @@ uint8_t mpu6050_i2c_read_byte_s(u8 ack)
 		mpu6050_i2c_nack_s();  			 // 主机读取结束，形参为0，产生非应答信号
 	else
 		mpu6050_i2c_ack_s();   			 // 形参为1，产生应答信号
-	  //ackfun();
 	return value;
 }
 
