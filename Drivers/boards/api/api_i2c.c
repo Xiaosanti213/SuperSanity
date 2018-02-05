@@ -10,7 +10,7 @@
 #include "board_config.h"
 #include "api_i2c.h"
 #include "app_cfg.h"
-
+#include <stdio.h> 
 
 
 
@@ -258,3 +258,16 @@ void mpu6050_i2c_nack_s(void)
 
 
 
+
+
+/**
+ * 名称: i2c_timeout_usercallback
+ *
+ * 描述：等待超时回调函数
+ *
+ */
+u8 i2c_timeout_usercallback_s(char* name, uint8_t error_code)
+{
+	printf("%s I2C等待超时！error_code =%d\n", name, error_code);
+	return 0;
+}

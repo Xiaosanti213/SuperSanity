@@ -24,7 +24,7 @@
  static void rodrigue_rotation_matrix(float* rot_axis, const float rot_angle, float rot_matrix[3][3]);
  static float atan2_numerical(float y, float x);
  static float abs_c_float_version(float);
- 
+
  
  
  
@@ -68,11 +68,12 @@
 	 float rot_matrix[3][3];						  						  //旋转矩阵2维数组
 	 static float att_est[3] = {0,0,1};	  	            //只初始化1次
 	 float att_gyro[3];
-	 u8 w_gyro2acc = 20;                 							  //陀螺仪相对加计比值
+	 float w_gyro2acc = 0.2;                 							  //陀螺仪相对加计比值
 	 u8 i = 0;
-	 float deltaT = 0.02;								  							//这个如果能通过计算运行循环时间解算就比较好了
+	 float deltaT = 0.32;								  							//这个如果能通过计算运行循环时间解算就比较好了
 	 
 	 sensors_data_direction_correct(sensors_data);      //传感器方向对正
+   printf_sensors_data_estimate(*sensors_data);       //读出正确取向传感器数据分析
 	 for(; i < 3; i++)
 	 {
 		 euler_delta[i] = sensors_data->gyro[i]*deltaT;   //计算相比较上次解算的旋转欧拉角
@@ -81,17 +82,17 @@
 	 euler_to_rotmatrix(euler_delta, rot_matrix);   		//欧拉角计算旋转矩阵
 	 matrix_multiply(rot_matrix, att_est, att_gyro);		//由前一次估计结果迭代得到当前姿态矢量
 	 normalize(sensors_data->acc);				           		//加计矢量正交化
+	 
+
 	 for (i = 0; i<3; i++)
 	 {
 			att_est[i] = (w_gyro2acc*att_gyro[i]+sensors_data->acc[i])/(1+w_gyro2acc);
 	 }
-	 
-	 //printf("Euler   Angle (deg ): %.2f%s%.2f%s%.2f%s",attitude_data->euler_angle[0], "  ",attitude_data->euler_angle[1], "  ",attitude_data->euler_angle[2], "  \n");
-	 //printf("Angle   Rate  (deg ): %.2f%s%.2f%s%.2f%s",attitude_data->angle_rate[0], "  ",attitude_data->angle_rate[1], "  ",attitude_data->angle_rate[2], "  \n");
-	 
-	 attitude_data->euler_angle[0] = atan2_numerical(att_est[1],1/fast_inv_sqrt(att_est[0]*att_est[0]+att_est[2]*att_est[2]))/10;
-	 attitude_data->euler_angle[1] = atan2_numerical(att_est[0], att_est[2])/10;	 
-	 
+	 attitude_data->euler_angle[0] = atan2_numerical(att_est[1],sqrt(att_est[0]*att_est[0]+att_est[2]*att_est[2]));
+	 attitude_data->euler_angle[1] = atan2_numerical(att_est[0], att_est[2]);	 
+	 printf("Euler   Angle (deg ): %.2f%s%.2f%s%.2f%s",attitude_data->euler_angle[0], "         ",attitude_data->euler_angle[1], "      ",attitude_data->euler_angle[2], "         \n");
+	 printf("Angle   Rate  (dps ): %.2f%s%.2f%s%.2f%s",attitude_data->angle_rate[0], "         ",attitude_data->angle_rate[1], "      ",attitude_data->angle_rate[2], "         \n");
+
 	 return ;
  }
  
@@ -396,6 +397,19 @@ float atan2_numerical(float y, float x)     // 防止重名
 
 
 
+
+/**
+ *
+ *  名称： printf_sensors_data_estimate
+ *
+ *  描述： 传感器数据输出，Matlab对接，测试估计情况
+ *
+ */
+void printf_sensors_data_estimate(sd sdata)
+{
+  printf("MPU6050 Accel ( g  ): %.2f%s%.2f%s%.2f%s", sdata.acc[0], "   ", sdata.acc[1], "   ", sdata.acc[2], "   \n");
+  printf("MPU6050 Gyro  (dps ): %.2f%s%.2f%s%.2f%s", sdata.gyro[0], "   ", sdata.gyro[1], "    ", sdata.gyro[2], "      \n");
+}
 
 
 

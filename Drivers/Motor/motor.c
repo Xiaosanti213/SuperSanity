@@ -35,6 +35,13 @@ static void delay_ms(u16);
 	  TIM_SetCompare3(PWM_TIM, motor[2]);
 		TIM_SetCompare4(PWM_TIM, motor[3]);
 	 }
+	 else//强制输出0
+	 {
+		TIM_SetCompare1(PWM_TIM, 0);
+	  TIM_SetCompare2(PWM_TIM, 0);
+	  TIM_SetCompare3(PWM_TIM, 0);
+		TIM_SetCompare4(PWM_TIM, 0);
+	 }
 
  }
  
@@ -187,17 +194,12 @@ void mix_table(int16_t* output, sd* s_data)//struct不能省略
  {
 	 u8 i=0;
 	 //#define  PIDMIX(X,Y,Z)  sd->rc_command[THROTTLE] + axis_pid[ROLL]*X + axis_pid[PITCH]*Y + axis_pid[YAW]*Z
-	 #define  PIDMIX(X,Y,Z)  output[3] +output[0]*X + output[1]*Y + output[2]*Z
+	 #define  PIDMIX(X,Y,Z)  output[0]*X + output[1]*Y + output[2]*Z + output[3];
 	 // 对于X型四轴
-	 s_data->motor[0] = PIDMIX(-0.5,+0.5,-0.5);  //右前 1号电机 
-	 s_data->motor[1] = PIDMIX(+0.5,+0.5,+0.5);  //左前 2号电机
-	 s_data->motor[2] = PIDMIX(+0.5,-0.5,-0.5);  //左后 3号电机
-	 s_data->motor[3] = PIDMIX(-0.5,-0.5,+0.5);  //右后 4号电机
-	 
-	 printf("一号：%d\n", s_data->motor[0]);
-	 printf("二号：%d\n", s_data->motor[1]);
-	 printf("三号：%d\n", s_data->motor[2]);
-	 printf("四号：%d\n", s_data->motor[3]);
+	 s_data->motor[0] = PIDMIX(-0.02,+0.02,-0.02);  //右前 1号电机 
+	 s_data->motor[1] = PIDMIX(+0.02,+0.02,+0.02);  //左前 2号电机
+	 s_data->motor[2] = PIDMIX(+0.02,-0.02,-0.02);  //左后 3号电机
+	 s_data->motor[3] = PIDMIX(-0.02,-0.02,+0.02);  //右后 4号电机
 	 
 	 for(i = 0; i<4; i++)
 			{
@@ -205,6 +207,12 @@ void mix_table(int16_t* output, sd* s_data)//struct不能省略
 					 s_data->motor[i] = 2000;
 			  else;
 			}
+			
+	 printf("1st : %d   \n", s_data->motor[0]);
+	 printf("2nd : %d   \n", s_data->motor[1]);
+	 printf("3rd : %d   \n", s_data->motor[2]);
+	 printf("4th : %d   \n", s_data->motor[3]);
+	 
 }
  
  

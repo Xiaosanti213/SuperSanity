@@ -24,7 +24,7 @@
  
  
  
-
+ void printf_sensors_data_estimate(sd sdata);
  void attitude_estimate(ad* attitude_data, sd* sensors_data);
  
  

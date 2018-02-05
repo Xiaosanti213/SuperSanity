@@ -75,14 +75,14 @@ int main()
 	
 	
 	
-	
+	//上电之后请保证各个舵程中立
 	sd sensors_data;
 	sc calib_data;
 	int16_t output[4] = {0,0,0,0}; 
 	ad attitude_data;
 	float reference[4];
 	sensors_init();
-  sensors_calibration(&calib_data, &sensors_data);//一定要静止水平再上电
+  sensors_calibration(&calib_data, &sensors_data);//一定要静止水平放置四轴，摇杆中立再上电
 	while(1)
 	{
 		get_sensors_data(&sensors_data, &calib_data);
@@ -91,7 +91,7 @@ int main()
 		attitude_control(attitude_data, reference, output);
 		
 		mix_table(output, &sensors_data); 
-		go_arm_check(sensors_data.rc_command);//校验一下解锁手势
+		go_arm_check(sensors_data.rc_command);//解锁之前不应有输出，亦不应有舵量
 		write_mini_motors(sensors_data.motor);
 	}
 

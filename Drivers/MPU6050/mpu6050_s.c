@@ -13,18 +13,13 @@
 #include "hmc5883l.h" 
 #include "api_i2c.h"
 #include <stdio.h>
-
+#include "sensors.h"
 
  
  
 static void i2c_mpu6050_delay_s(void); 
 static uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte);
 static uint8_t i2c_receive_data_s(u8 reg, uint8_t* byte_add, uint8_t num);
-static uint8_t i2c_timeout_usercallback_s(uint8_t error_code);
-
-
-
-#define I2C_WAIT_TIMEOUT		((u32)0x1000)
 
 
 
@@ -102,7 +97,7 @@ void i2c_mpu6050_read_acc_s(float* acc)
 	acc[0] = (float)acc_temp[0] * 2 / 32768;
 	acc[1] = (float)acc_temp[1] * 2 / 32768;
 	acc[2] = (float)acc_temp[2] * 2 / 32768;
-	printf("MPU6050 Accel ( g  ): %.2f%s%.2f%s%.2f%s", acc[0], "   ", acc[1], "   ", acc[2], "   \n");
+	//printf("MPU6050 Accel ( g  ): %.2f%s%.2f%s%.2f%s", acc[0], "   ", acc[1], "   ", acc[2], "   \n");
 	
 }
 
@@ -134,7 +129,7 @@ void i2c_mpu6050_read_gyro_s(float* gyro)
 	gyro[1] = (float)gyro_temp[1] * 2000/ 32768;
 	gyro[2] = (float)gyro_temp[2] * 2000/ 32768;
 	
-	printf("MPU6050 Gyro  (dps ): %.2f%s%.2f%s%.2f%s", gyro[0], "   ", gyro[1], "    ", gyro[2], "      \n");
+	//printf("MPU6050 Gyro  (dps ): %.2f%s%.2f%s%.2f%s", gyro[0], "   ", gyro[1], "    ", gyro[2], "      \n");
 	
 }
 
@@ -302,7 +297,7 @@ void i2c_mpu6050_read_mag_s(float* mag)
 	mag[1] = (float)mag_temp[1] * 4.35;
 	mag[2] = (float)mag_temp[2] * 4.35;
 	
-	printf("MPU6050 Mag   (dps ): %.2f%s%.2f%s%.2f%s", mag[0], "   ", mag[1], "    ", mag[2], "      \n");
+	//printf("MPU6050 Mag   (deg ): %.2f%s%.2f%s%.2f%s", mag[0], "   ", mag[1], "    ", mag[2], "      \n");
 }
 
 
@@ -331,7 +326,7 @@ uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(1);
+			return i2c_timeout_usercallback_s("MPU6050", 1);
 		}
 		i2c_wait_timeout--;
 	}
@@ -345,7 +340,7 @@ uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(2);
+			return i2c_timeout_usercallback_s("MPU6050", 2);
 		}
 		i2c_wait_timeout--;
 	}
@@ -356,7 +351,7 @@ uint8_t i2c_send_data_single_s(uint8_t reg, uint8_t byte)
 	{
 	  if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(3);
+			return i2c_timeout_usercallback_s("MPU6050", 3);
 		}
 		i2c_wait_timeout--;
 	}
@@ -394,7 +389,7 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(2);
+			return i2c_timeout_usercallback_s("MPU6050", 1);
 		}
 		i2c_wait_timeout--;
 	}
@@ -407,7 +402,7 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(3);
+			return i2c_timeout_usercallback_s("MPU6050", 2);
 		}
 		i2c_wait_timeout--; 
 	}
@@ -420,7 +415,7 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 		{
 		  if(i2c_wait_timeout == 0)
 			{
-				return i2c_timeout_usercallback_s(4);
+				return i2c_timeout_usercallback_s("MPU6050", 3);
 			}
 			i2c_wait_timeout--;
 		}
@@ -456,7 +451,7 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(2);
+			return i2c_timeout_usercallback_s("MPU6050", 1);
 		}
 		i2c_wait_timeout--;
 	}	
@@ -470,7 +465,7 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(3);
+			return i2c_timeout_usercallback_s("MPU6050", 2);
 		}
 		i2c_wait_timeout--;
 	}
@@ -485,7 +480,7 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_timeout_usercallback_s(5);
+			return i2c_timeout_usercallback_s("MPU6050", 3); 
 		}
 		i2c_wait_timeout--;
 	}
@@ -511,19 +506,6 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 }
 	
 
-
-
-/**
- * 名称: i2c_timeout_usercallback
- *
- * 描述：等待超时回调函数
- *
- */
-uint8_t i2c_timeout_usercallback_s(uint8_t error_code)
-{
-	printf("MPU6050 等待超时！errorCode =%d\n", error_code);
-	return 0;
-}
 
 
 

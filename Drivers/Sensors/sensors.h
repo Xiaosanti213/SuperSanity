@@ -24,14 +24,10 @@ typedef struct sensors_data
 
 typedef struct sensors_calib
 {
-	u8 acc_calib[3];
-	u8 gyro_calib[3]; 
+	float acc_calib[3];
+	float gyro_calib[3];
+  float	rc_calib[4]; 
 }sc; 
-
-
-
-
-
 
 
 
@@ -43,7 +39,7 @@ void init_recog_motors(void);
 void go_disarm(void);
 void nrf_read_to_motors(u16* rc_command);
 void sensors_calibration(sc* s_calib, sd* s_data);
-
+void delay_approx(u16);
 
 
 

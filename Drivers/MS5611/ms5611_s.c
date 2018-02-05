@@ -14,21 +14,16 @@
 #include <stdio.h>
 #include <stm32f10x.h>
 #include "api_i2c.h"
-
+#include "sensors.h"
 
 
 static void i2c_ms5611_read_calibration_s(uint8_t cx, uint16_t* cx_buffer);
 static void i2c_ms5611_read_adc_s(uint8_t config, uint32_t* adc_buffer);
-static void i2c_ms5611_delay_s(u16); 
 static u8 i2c_ms5611_send_cmd_s(uint8_t cmd); 
-static u8 i2c_ms5611_timeout_usercallback_s(u8 error_code);
 static uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num);
 
 
 
-
-
-#define 			I2C_WAIT_TIMEOUT 			((u32)0x2000)
 
 
 
@@ -42,10 +37,10 @@ void i2c_ms5611_init_s(void)
 {
 	//ms5611_config();																	//ms5611引脚和片上外设配置
 	ms5611_i2c_gpio_config_s();
-  i2c_ms5611_delay_s(1000); 													//ms5611上电延时
+  delay_approx(1000); 													//ms5611上电延时
 	
 	i2c_ms5611_send_cmd_s(MS5611_RESET);	    					//写入传感器复位指令
-  i2c_ms5611_delay_s(1000); 
+  delay_approx(1000); 
 }
 
 
@@ -83,7 +78,7 @@ void i2c_ms5611_read_adc_s(uint8_t config, uint32_t* adc_buffer)//形参一个字节，
 {
 	u8 adc_pre[3]; 
 	i2c_ms5611_send_cmd_s(config);																		// 发送配置指令D1或D2以及OSR
-	i2c_ms5611_delay_s(300);																					// 等待转换结束，经过测试，延时最短时间100~300
+	delay_approx(300);																	      				// 等待转换结束，经过测试，延时最短时间100~300
 	i2c_ms5611_send_cmd_s(MS5611_ADC_READ); 													// 发送MS5611_ADC_READ指令
 	i2c_ms5611_receive_data_s(adc_pre, 3);
 	*adc_buffer = (adc_pre[0] << 16) | (adc_pre[1] << 8) | (adc_pre[2]); 
@@ -103,8 +98,8 @@ void i2c_ms5611_read_adc_s(uint8_t config, uint32_t* adc_buffer)//形参一个字节，
  */
 int32_t i2c_ms5611_calculate_s(void)
 {
-	int32_t difference_temp, temperature, pressure;
-	int64_t offset, sensitivity;
+	int32_t difference_temp, pressure;
+	int64_t offset, sensitivity, temperature;
 	u16 coefficient[6];
 	u32 digital_pressure, digital_temp;
 	
@@ -139,7 +134,7 @@ int32_t i2c_ms5611_calculate_s(void)
 		// dT = D2 - T_REF = D2 - C5 * 2^8
 		temperature = 2000 + (difference_temp * (int64_t)coefficient[5] >> 23);  										// 容量足够，>>优先级比* +都要小。10^9量级 32bit可能会溢出，故用int64
 		// 实际温度：TEMP = 20C + dT*TEMPSENS = 2000 + dT * C6/2^23
-		printf("MS5611  Temp  (Ces ): %.2f   \n", (float)temperature/100);
+		//printf("MS5611  Temp  (Ces ): %.2f   \n", (float)temperature/100);
 		
 		offset = ((int64_t)coefficient[1] << 16) + ((int64_t)difference_temp * coefficient[3] >> 7 ); 				// int64_t与先>>7防止溢出
 		
@@ -149,42 +144,13 @@ int32_t i2c_ms5611_calculate_s(void)
 		
 		pressure = (((int64_t)digital_pressure * sensitivity >> 21) - offset) >> 15; 								// 容量足够 -优先级大于>>，加括号防止警告
 		// P = D1 * SENS - OFF = (D1 * SENS / 2^21 - OFF) / 2^15 
-    printf("MS5611  Press (mbar): %.2f  \n", (float)pressure/10);
+    //printf("MS5611  Press (mbar): %.2f  \n", (float)pressure/10);
 		
 		return pressure;
 	
-	return 0; 												 												 												 						// 失败
 }
 
-
-
-
-
-
-
-
-
-	
-/**
- *
- *  名称： i2c_ms5611_delay_s
- *
- *  描述： ms5611上电延时
- *
- */
-void i2c_ms5611_delay_s(u16 time_to_delay)
-{
-	uint16_t i=0,j=0;
-  //在初始化之前要延时一段时间，若没有延时，则断电后再上电数据可能会出错
-  for(i=0; i < time_to_delay; i++)
-  {
-    for(j=0; j < time_to_delay; j++)
-    {
-      ;
-    }
-  }
-}	
-
+ 
 
 
 
@@ -214,7 +180,7 @@ u8 i2c_ms5611_send_cmd_s(u8 cmd)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_ms5611_timeout_usercallback_s(1);
+			return i2c_timeout_usercallback_s("MS5611", 1);
 		}
 		i2c_wait_timeout--;
 	}
@@ -228,7 +194,7 @@ u8 i2c_ms5611_send_cmd_s(u8 cmd)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_ms5611_timeout_usercallback_s(2);
+			return i2c_timeout_usercallback_s("MS5611", 2);
 		}
 		i2c_wait_timeout--;
 	}
@@ -264,7 +230,7 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 	{
 		if(i2c_wait_timeout == 0)
 		{
-			return i2c_ms5611_timeout_usercallback_s(4);
+			return i2c_timeout_usercallback_s("MS5611", 1);
 		}
 		i2c_wait_timeout--;
 	}
@@ -291,24 +257,6 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 	return SUCCESS;																				//成功读出数据
 }
 	
-
-
-
-
-
-
-/**
- *
- *  名称： i2c_ms5611_timeout_usercallback_s
- *
- *  描述： ms5611发送指令
- *
- */
-u8 i2c_ms5611_timeout_usercallback_s(u8 error_code)
-{
-	printf("MS5611 等待超时！errorCode =%d\n", error_code); 
-	return 0;
-}
 
 
 

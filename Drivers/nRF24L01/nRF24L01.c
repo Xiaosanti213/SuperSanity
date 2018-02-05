@@ -37,6 +37,7 @@ void spi_nrf_init(void)
 {	
 	nrf24l01_config();	// 不配置亦不传输，CE失能外设，NSS失能SPI
 	RC_SPI_NSS_HIGH_FUN();
+	printf("Checking nrf... %d\n",spi_nrf_check());
 }
 
 
@@ -405,6 +406,6 @@ uint8_t spi_nrf_write_buffer(uint8_t reg, uint8_t* pBuf, uint8_t bytes)
   */
 int nrf_timeout_usercallback(u8 error_code)
 {
-	//printf("nrf 等待超时！errorCode =%d\n", error_code);
+	printf("nrf 等待超时！errorCode =%d\n", error_code);
 	return 0;
 }
