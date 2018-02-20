@@ -46,6 +46,9 @@ void spi_nrf_init(void)
 
 
 
+
+
+
 /**
   * 名称：spi_nrf_check
   *
@@ -77,6 +80,9 @@ uint8_t spi_nrf_check(void)
 	 return FAILURE;
 
 }
+
+
+
 
 
 
@@ -120,91 +126,6 @@ void spi_nrf_rx_mode(void)
 
 
 
-/**
-  * 名称：spi_nrf_tx_mode
-  *  
-  * 描述：初始化NRF24L01为TX模式
-  *
-  */
-
-/*
-void spi_nrf_tx_mode(void)
-{
-    //power_off();
-	  //power down模式下参数配置	
-	
-	  RC_SPI_CE_LOW_FUN();    
-	
-  	spi_nrf_write_buffer(WRITE_REG_NRF+TX_ADDR, (uint8_t *)TX_ADDRESS, TX_ADR_WIDTH);
-	  //写TX节点地址 
-  	spi_nrf_write_buffer(WRITE_REG_NRF+RX_ADDR_P0, (uint8_t*)RX_ADDRESS, RX_ADR_WIDTH); 
-	  //设置pipe0节点地址, 用来接收ACK信号	  
-
-  	spi_nrf_reg_write(WRITE_REG_NRF+EN_AA, ENAA_P0);     
-	  //使能通道0的自动应答    
-  	spi_nrf_reg_write(WRITE_REG_NRF+EN_RXADDR,ERX_P0); 
-	  //使能通道0的接收地址  
-  	spi_nrf_reg_write(WRITE_REG_NRF+SETUP_RETR,ARD_WAIT_500US | ARC_RETRANSMIT_10);
-	  //设置自动重发间隔时间:500us + 86us;最大自动重发次数:10次
-  	spi_nrf_reg_write(WRITE_REG_NRF+RF_CH,40);       
-	  //设置RF通信频率为40Hz
-  	spi_nrf_reg_write(WRITE_REG_NRF+RF_SETUP, RF_DR_HIGH | RF_PWR_0dBm);  
-	  //设置发射参数,0db增益,2Mbps 
-  	spi_nrf_reg_write(WRITE_REG_NRF+CONFIG, EN_CRC | CRCO_2Byte | PWR_UP );    
-	  //配置基本工作模式的参数;PWR_UP,EN_CRC,16BIT_CRC,接收模式,开启所有中断
-	
-	  RC_SPI_CE_HIGH_FUN(); 
-		//CE为高,10us后启动发送
-}		  
-*/
-
-
-
-
-/**
-  * 名称：spi_nrf_tx_packet
-  *  
-  * 描述：通过nRF24L01发送数据
-  *
-  */
-/*
-uint8_t spi_nrf_tx_packet(uint8_t *txbuffer)
-{
-	uint8_t tx_status;
-	
-	RC_SPI_CE_LOW_FUN();
-	//写入数据配置
-	spi_nrf_write_buffer(WRITE_REG_NRF + WR_TX_PAYLOAD, txbuffer, TX_PLOAD_WIDTH);
-	//写txbuffer中的数据到WR_TX_PAYLOAD寄存器, txbuffer是一组数据的首地址，自动读取相应32Byte数据
-	RC_SPI_CE_HIGH_FUN();
-	//启动发送	 
-  
-	while(RC_SPI_INT_SCAN_FUN()!=RC_SPI_INT_LOW)
-	{
-		;
-	}//等待发送完成
-	
-	tx_status = spi_nrf_reg_read(READ_REG_NRF + STATUS);  
-	//读取Ack状态寄存器的值	
-	spi_nrf_reg_write(WRITE_REG_NRF + STATUS, tx_status); 
-	//清除TX_DS或MAX_RT中断标志
-	
-	if(tx_status & MAX_RT)//达到最大重发次数
-	{
-		spi_nrf_reg_write(FLUSH_TX, 0xff);
-		//清除TX FIFO寄存器 
-		
-		return MAX_RT; 
-	}
-	
-	if(tx_status & TX_DS)//发送完成
-	{
-		return SUCCESS;
-	}
-	return FAILURE;//发送失败
-}
-
-*/
 
 
 
@@ -253,21 +174,11 @@ uint8_t spi_nrf_rx_packet(uint8_t *rxbuf)
 
 
 
-/**
-  * 名称：power_off
-  *  
-  * 描述：配置参数是在config寄存器配置为power down模式中完成
-  *
-  */
-//void power_off(void)
-//{
-//	RC_SPI_CE_LOW_FUN();
-	// 配置成：使能CRC校验，'0'-1字节CRC编码，RX控制（后续进一步配置，这个参数无所谓）
-//	spi_nrf_reg_write(WRITE_REG_NRF + CONFIG, EN_CRC|CRCO_2Byte|PRIM_RX);
-//	RC_SPI_CE_HIGH_FUN();
-	// 延时
-//	delay_us(20);
-//}
+
+
+
+
+
 
 
 

@@ -35,7 +35,7 @@ void sensors_init(void)
 	status_led_gpio_config();			// 指示灯LED
 	
   i2c_mpu6050_init_s();					// 写入配置参数
-	i2c_mpu6050_config_mag_s();		// 获取从机数据
+	i2c_mpu6050_config_mag_s();		
   i2c_mpu6050_init_mag_s();
   i2c_ms5611_init_s();
 	
@@ -60,27 +60,27 @@ void get_sensors_data(sd* sdata, sc* calib_data)
 	u8 axis = 0;
 	float smooth_factor = 1.5;
 	static float acc_filtered[3] = {0,0,1};
-	//读取数据
+	//1 读取数据
 	i2c_mpu6050_read_acc_s(sdata->acc);
 	i2c_mpu6050_read_gyro_s(sdata->gyro);
 	i2c_mpu6050_read_mag_s(sdata->mag); 
 	sdata->press = i2c_ms5611_calculate_s();
 	nrf_read_to_motors(sdata->rc_command);
 	
-	//加计陀螺仪校准修正
+	//2 加计陀螺仪校准修正
 	for(axis=0; axis<3; axis++)
   {
 		sdata->acc[axis] -= calib_data->acc_calib[axis];
 		sdata->gyro[axis] -= calib_data->gyro_calib[axis];
 	}
-	// 迭代加计平滑滤波修正
+	//3 迭代加计平滑滤波修正
 	for(axis=0; axis<3; axis++)
 	{
 		acc_filtered[axis] -= acc_filtered[axis]/smooth_factor;
 		acc_filtered[axis] += sdata->acc[axis]/smooth_factor;
 		sdata->acc[axis] = acc_filtered[axis];
 	}
-	//遥控器舵量修正
+	//4 遥控器舵量修正
 	for(axis=0; axis<4; axis++)
 	{
 		if((calib_data->rc_calib[axis]>50 || calib_data->rc_calib[axis]<-50) && axis!=2)
@@ -124,9 +124,9 @@ void sensors_calibration(sc* s_calib, sd* s_data)
 			if(axis<2)
 				acc_sum[axis] += s_data->acc[axis];
 			else
-			  acc_sum[axis] += (s_data->acc[axis]-1);
-			gyro_sum[axis] += s_data->gyro[axis];
-			calib_flag++;
+			    acc_sum[axis] += (s_data->acc[axis]-1);
+			    gyro_sum[axis] += s_data->gyro[axis];
+			    calib_flag++;
 		}
 		s_calib->acc_calib[axis] = acc_sum[axis]/calib_flag;//20次取平均
 		s_calib->gyro_calib[axis] = gyro_sum[axis]/calib_flag;
@@ -159,6 +159,7 @@ void sensors_calibration(sc* s_calib, sd* s_data)
 		s_calib->rc_calib[axis] = rc_sum[axis]/(calib_flag);
 		//后续添加：如果少于一定次数，校准失败
 	}
+	
 }
 
 
@@ -182,9 +183,9 @@ void nrf_read_to_motors(u16* rc_command)
 {
 	 u8 rxbuf[8];
 	/*判断接收状态 收到数据*/
-	//while(!spi_nrf_rx_packet(rxbuf))
-	//{printf("No RC Data%d\n",spi_nrf_rx_packet(rxbuf));}//拿不到则不进行下一步
-		//下面这个步骤已经将motor值映射到了1000~2000上
+	/*while(!spi_nrf_rx_packet(rxbuf))
+	{printf("No RC Data%d\n",spi_nrf_rx_packet(rxbuf));}//拿不到则不进行下一步
+		*///下面这个步骤已经将motor值映射到了1000~2000上
 		rc_command[0] = (float)(rxbuf[1]<<8 | rxbuf[0])/4096*1000 + 1000;
 		rc_command[1] = (float)(rxbuf[3]<<8 | rxbuf[2])/4096*1000 + 1000;
 		rc_command[2] = (float)(rxbuf[5]<<8 | rxbuf[4])/4096*1000 + 1000;

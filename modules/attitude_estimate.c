@@ -73,10 +73,10 @@
 	 float deltaT = 0.32;								  							//这个如果能通过计算运行循环时间解算就比较好了
 	 
 	 sensors_data_direction_correct(sensors_data);      //传感器方向对正
-   printf_sensors_data_estimate(*sensors_data);       //读出正确取向传感器数据分析
+     printf_sensors_data_estimate(*sensors_data);       //读出正确取向传感器数据分析
 	 for(; i < 3; i++)
 	 {
-		 euler_delta[i] = sensors_data->gyro[i]*deltaT;   //计算相比较上次解算的旋转欧拉角
+	   euler_delta[i] = sensors_data->gyro[i]*deltaT;   //计算相比较上次解算的旋转欧拉角
 	   attitude_data->angle_rate[i] = sensors_data->gyro[i]; 
 	 }
 	 euler_to_rotmatrix(euler_delta, rot_matrix);   		//欧拉角计算旋转矩阵
@@ -86,7 +86,7 @@
 
 	 for (i = 0; i<3; i++)
 	 {
-			att_est[i] = (w_gyro2acc*att_gyro[i]+sensors_data->acc[i])/(1+w_gyro2acc);
+	   att_est[i] = (w_gyro2acc*att_gyro[i]+sensors_data->acc[i])/(1+w_gyro2acc);
 	 }
 	 attitude_data->euler_angle[0] = atan2_numerical(att_est[1],sqrt(att_est[0]*att_est[0]+att_est[2]*att_est[2]));
 	 attitude_data->euler_angle[1] = atan2_numerical(att_est[0], att_est[2]);	 
@@ -143,7 +143,7 @@
  void matrix_multiply(const float mat[3][3], const float* vec1, float* vec2)//
 {
 	vec2[0] = mat[0][0]*vec1[0]+mat[0][1]*vec1[1]+mat[0][2]*vec1[2];
-  vec2[1] = mat[1][0]*vec1[0]+mat[1][1]*vec1[1]+mat[1][2]*vec1[2];
+    vec2[1] = mat[1][0]*vec1[0]+mat[1][1]*vec1[1]+mat[1][2]*vec1[2];
 	vec2[2] = mat[2][0]*vec1[0]+mat[2][1]*vec1[1]+mat[2][2]*vec1[2];
 	return ;
 }
@@ -190,7 +190,7 @@
  */ 
  float fast_inv_sqrt(float number)
  {
-  long i;
+    long i;
 	float x2, y;
 	const float threehalfs = 1.5f;
 

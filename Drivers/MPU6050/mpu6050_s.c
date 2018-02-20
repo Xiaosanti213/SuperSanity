@@ -153,9 +153,9 @@ void i2c_mpu6050_read_temp_s(float* temp)
 	
 	u8 buffer[2];
 	int16_t temp_quant;
-	i2c_receive_data_s(MPU6050_RA_TEMP_OUT_H, buffer, 2); //读取温度数据首地址
+	i2c_receive_data_s(MPU6050_RA_TEMP_OUT_H, buffer, 2); 		//读取温度数据首地址
 	temp_quant = (buffer[0]<<8) | buffer[1];					
-	temp[0] = (double)temp_quant/340.0 + 36.53;				//转换成摄氏温度
+	temp[0] = (double)temp_quant/340.0 + 36.53;								//转换成摄氏温度
 	
 }
 
@@ -409,7 +409,7 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
 
 	for(index = 0; index < num; index++)
 	{
-		mpu6050_i2c_send_byte_s(*buffer);										//4 发送一个字节数据
+		mpu6050_i2c_send_byte_s(*buffer);										//4 发送若干个字节数据
 		
 		while(mpu6050_i2c_wait_ack_s())
 		{
@@ -485,16 +485,16 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 		i2c_wait_timeout--;
 	}
 	
-	while(num)																// 循环读取
+	while(num)																						// 6 循环读取
 	{
-		if (num == 1)														//读取最后一字节数据
+		if (num == 1)																				// 7 读取最后一字节数据
 		{
-			*buffer = mpu6050_i2c_read_byte_s(0); //产生Nack信号
+			*buffer = mpu6050_i2c_read_byte_s(0); 						// 7 产生Nack信号
 			mpu6050_i2c_stop_s(); 
 		}
     else 
     {      
-      *buffer = mpu6050_i2c_read_byte_s(1); //产生ack信号
+      *buffer = mpu6050_i2c_read_byte_s(1); 						// 7 产生ack信号
       buffer++; 
       
     }
@@ -502,7 +502,7 @@ uint8_t i2c_receive_data_s(u8 reg, uint8_t* buffer, uint8_t num)
 	}
 	
 	
-	return SUCCESS;														//成功读出数据
+	return SUCCESS;																				// 成功读出数据
 }
 	
 

@@ -37,7 +37,7 @@ void i2c_ms5611_init_s(void)
 {
 	//ms5611_config();																	//ms5611引脚和片上外设配置
 	ms5611_i2c_gpio_config_s();
-  delay_approx(1000); 													//ms5611上电延时
+  delay_approx(1000); 														  	//ms5611上电延时
 	
 	i2c_ms5611_send_cmd_s(MS5611_RESET);	    					//写入传感器复位指令
   delay_approx(1000); 
@@ -236,17 +236,16 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 	}
 	
 	
-	while(num)																						// 循环读取
+	while(num)																						// 3 循环读取
 	{
 		if(num == 1)
 		{
-			*buffer = ms5611_i2c_read_byte_s(0);							//最后一次收到发送Nack
+			*buffer = ms5611_i2c_read_byte_s(0);							// 4 最后一次收到发送Nack，并产生终止信号
 			ms5611_i2c_stop_s(); 
 		}
-		else																  							//接收到数据并发送Ack信号
+		else																  							// 4 接收到数据并发送Ack信号
     {      
       *buffer = ms5611_i2c_read_byte_s(1);
-
       buffer++; 
      }
 		 num--;        
@@ -254,7 +253,7 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 	}
 	
 
-	return SUCCESS;																				//成功读出数据
+	return SUCCESS;																				// 成功读出数据
 }
 	
 
