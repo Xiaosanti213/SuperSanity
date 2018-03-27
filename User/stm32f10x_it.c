@@ -23,7 +23,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
-#include "ucos_ii.h"
 
 
 /** @addtogroup STM32F10x_StdPeriph_Template
@@ -35,6 +34,10 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
+
+extern void current_time_count(void);
+
+
 /* Private functions ---------------------------------------------------------*/
 
 /******************************************************************************/
@@ -126,9 +129,9 @@ void DebugMon_Handler(void)
   * @retval None
   * 需要屏蔽避免和os_cpu_a.asm冲突
   */
-//void PendSV_Handler(void)
-//{
-//}
+void PendSV_Handler(void)
+{
+}
 
 /**
   * @brief  This function handles SysTick Handler.
@@ -137,16 +140,8 @@ void DebugMon_Handler(void)
   */
 void SysTick_Handler(void)
 {
-    OS_CPU_SR  cpu_sr;
-
-
-    OS_ENTER_CRITICAL();                         /* Tell uC/OS-II that we are starting an ISR          */
-    OSIntNesting++;
-    OS_EXIT_CRITICAL();
-
-    OSTimeTick();                                /* Call uC/OS-II's OSTimeTick()                       */
-
-    OSIntExit(); 
+    current_time_count();
+	//定义于systick.h文件当中
 }
 
 /******************************************************************************/

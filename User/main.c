@@ -16,47 +16,8 @@
 #include "attitude_control.h"
 #include "board_config.h"
 
-#include "ucos_ii.h"
-#include "app_cfg.h"
 
-
-
-/*
-#define TaskStkLength 64
-void Task0(void* pdata)
-{
-	pdata = pdata;
-	controller_init();//飞控板初始化
-	while(1)
-	{
-		STATUS_LED1_ON;
-		OSTimeDly(OS_TICKS_PER_SEC/4);
-		STATUS_LED1_OFF;
-		OSTimeDly(OS_TICKS_PER_SEC/4);
-	}
-}
-
-
-
-
-
-void Task1(void* pdata)
-{
-	pdata = pdata;
-	while(1)
-	{
-		STATUS_LED_ON;
-		OSTimeDly(OS_TICKS_PER_SEC/3);
-		STATUS_LED_OFF;
-		OSTimeDly(OS_TICKS_PER_SEC/3);
-	}
-}
-
-
-
-
-
-*/
+#include "systick.h"
 
 
 
@@ -64,16 +25,6 @@ void Task1(void* pdata)
 
 int main()
 {
-  // 测试操作系统配置	任务调度
-	/*OS_STK TaskStk0[TaskStkLength];
-	OS_STK TaskStk1[TaskStkLength];
-  OSInit();
-	OSTaskCreate(Task0, (void*)0, &TaskStk0[TaskStkLength-1],4);
-	OSTaskCreate(Task1, (void*)0, &TaskStk1[TaskStkLength-1],5); 
-  OSStart(); 
-	*/
-	
-	
 	
 	//上电之后请保证各个舵程中立
 	sd sensors_data;
@@ -81,6 +32,18 @@ int main()
 	int16_t output[4] = {0,0,0,0}; 
 	ad attitude_data;
 	float reference[4];
+	
+	// 测试定时器输出计数值
+	systick_init();  
+  
+  SysTick->CTRL |=  SysTick_CTRL_ENABLE_Msk;  
+  delay(10000);     
+  SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;  
+	
+	
+	
+	
+	
 	sensors_init();
   sensors_calibration(&calib_data, &sensors_data);//一定要静止水平放置四轴，摇杆中立再上电
 	while(1)

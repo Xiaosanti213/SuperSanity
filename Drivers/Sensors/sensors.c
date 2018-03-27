@@ -66,6 +66,7 @@ void get_sensors_data(sd* sdata, sc* calib_data)
 	i2c_mpu6050_read_mag_s(sdata->mag); 
 	sdata->press = i2c_ms5611_calculate_s();
 	nrf_read_to_motors(sdata->rc_command);
+	//TODO:一次成功一次失败是什么鬼
 	
 	//2 加计陀螺仪校准修正
 	for(axis=0; axis<3; axis++)
@@ -149,11 +150,12 @@ void sensors_calibration(sc* s_calib, sd* s_data)
 			}
 			else 
 			{
+				/*
 				s_calib->rc_calib[0] = 100; //接收数据出错，超过阈值退出
 				s_calib->rc_calib[1] = 100; 
 				s_calib->rc_calib[2] = 100; 
 				s_calib->rc_calib[3] = 100; 
-			  return;
+			  return;*/
 			}
 		}
 		s_calib->rc_calib[axis] = rc_sum[axis]/(calib_flag);
@@ -183,9 +185,10 @@ void nrf_read_to_motors(u16* rc_command)
 {
 	 u8 rxbuf[8];
 	/*判断接收状态 收到数据*/
-	/*while(!spi_nrf_rx_packet(rxbuf))
-	{printf("No RC Data%d\n",spi_nrf_rx_packet(rxbuf));}//拿不到则不进行下一步
-		*///下面这个步骤已经将motor值映射到了1000~2000上
+	spi_nrf_rx_packet(rxbuf);
+	//while(!spi_nrf_rx_packet(rxbuf));
+	//{printf("No RC Data%d\n",spi_nrf_rx_packet(rxbuf));}//拿不到则不进行下一步
+		//下面这个步骤已经将motor值映射到了1000~2000上
 		rc_command[0] = (float)(rxbuf[1]<<8 | rxbuf[0])/4096*1000 + 1000;
 		rc_command[1] = (float)(rxbuf[3]<<8 | rxbuf[2])/4096*1000 + 1000;
 		rc_command[2] = (float)(rxbuf[5]<<8 | rxbuf[4])/4096*1000 + 1000;

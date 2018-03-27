@@ -125,7 +125,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>1</UseSimulator>
+            <UseSimulator>0</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -137,7 +137,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Simulator>
           <Target>
-            <UseTarget>0</UseTarget>
+            <UseTarget>1</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -149,7 +149,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>9</TargetSelection>
+          <TargetSelection>12</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -369,7 +369,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\Drivers\boards\api;..\Drivers\boards\sanity-v1708;..\Drivers\nRF24L01;..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\User;..\Drivers\MPU6050;..\Drivers\Debug;..\uCOS-II\Source;..\uCOS-II\Ports;..\Drivers\Motor;..\Drivers\MS5611;..\Drivers\Sensors;..\modules;..\modules\estimate_control</IncludePath>
+              <IncludePath>..\Drivers\boards\api;..\Drivers\boards\sanity-v1708;..\Drivers\nRF24L01;..\Libraries\CMSIS\CM3\CoreSupport;..\Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;..\Libraries\STM32F10x_StdPeriph_Driver\inc;..\User;..\Drivers\MPU6050;..\Drivers\Debug;..\uCOS-II\Source;..\uCOS-II\Ports;..\Drivers\Motor;..\Drivers\MS5611;..\Drivers\Sensors;..\modules</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -626,14 +626,14 @@
           <GroupName>modules</GroupName>
           <Files>
             <File>
-              <FileName>attitude_estimate.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\modules\estimate_control\attitude_estimate.c</FilePath>
-            </File>
-            <File>
               <FileName>attitude_control.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\modules\estimate_control\attitude_control.c</FilePath>
+              <FilePath>..\modules\attitude_control.c</FilePath>
+            </File>
+            <File>
+              <FileName>attitude_estimate.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\modules\attitude_estimate.c</FilePath>
             </File>
           </Files>
         </Group>
