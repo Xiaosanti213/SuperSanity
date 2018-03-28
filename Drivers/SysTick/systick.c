@@ -33,8 +33,8 @@ void systick_init(void)
 		//捕获出错
 	}
 	
-	SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;//清0
-	// 关闭嘀嗒定时器
+	SysTick->CTRL |=  SysTick_CTRL_ENABLE_Msk;//置位
+	// 开启嘀嗒定时器
 }
  
  
@@ -103,30 +103,30 @@ void current_time_count(void)
  
  /************************************************************************************
  * 
- * 名称: delay_us
+ * 名称: delay_4us
  *
- * 描述: 操作系统滴答时钟延时函数
+ * 描述: 模拟I2C函数，理论上是4.12us
  *   
  ************************************************************************************/
- void delay_us(u32 i)
+ void delay_4us(void)
  {
-     u32 temp;
-     SysTick->LOAD=9*i;          
-     SysTick->CTRL=0X01;//开启          
-     SysTick->VAL=0;                 
-     do
-     {
-         temp=SysTick->CTRL;            
-     }
-     while((temp&0x01)&&(!(temp&(1<<16))));      
-     SysTick->CTRL=0;  //关闭   
-     SysTick->VAL=0;         
+     delay(15);
  }
  
  
  
  
- 
+ /************************************************************************************
+ * 
+ * 名称: delay_1us
+ *
+ * 描述: 模拟I2C函数，理论上是1.02us
+ *   
+ ************************************************************************************/
+ void delay_1us(void)
+ {
+     delay(6);
+ } 
  
  
  

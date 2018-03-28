@@ -10,6 +10,7 @@
 #include "board_config.h"
 #include "stm32f10x.h"
 #include <stdio.h>
+#include <sensors.h>
 
 
 uint8_t RX_ADDRESS[RX_ADR_WIDTH] = {0x34,0x43,0x10,0x10,0x01};
@@ -143,16 +144,16 @@ uint8_t spi_nrf_rx_packet(uint8_t *rxbuf)
 	uint8_t rx_status;	
   u8 spi_wait_timeout = SPI_WAIT_TIMEOUT;	
 	
-	RC_SPI_CE_HIGH_FUN();	 //进入接收状态
+	RC_SPI_CE_HIGH_FUN();	 								 //1 进入接收状态
 	
 	//设定等待时间限制
-	while(RC_SPI_INT_SCAN_FUN())//接收到数据会拉低
+	while(RC_SPI_INT_SCAN_FUN())					 //2 接收到数据会拉低
 	{	
 		if(!(spi_wait_timeout--))
 			return nrf_timeout_usercallback(0);//没有接收到数据
 	}
 
-	RC_SPI_CE_LOW_FUN();  	 //进入待机状态
+	RC_SPI_CE_LOW_FUN();  	 							 //3 进入待机状态
 	
 	rx_status = spi_nrf_reg_read(STATUS);  
 	//读取状态寄存器的值    	 
@@ -166,6 +167,8 @@ uint8_t spi_nrf_rx_packet(uint8_t *rxbuf)
 		//读取数据
 		spi_nrf_reg_write(FLUSH_RX, 0xff);
 		//清除RX FIFO寄存器 
+		RC_SPI_CE_HIGH_FUN();
+		//收到数据后置高，下一轮再置高来不及
 		return SUCCESS; 
 	}	   
 	return FAILURE;//没收到任何数据

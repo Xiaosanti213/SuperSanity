@@ -15,10 +15,9 @@
 #include "nRF24L01.h"
 #include "ms5611.h"
 #include "sensors.h"
-#include "app_cfg.h"
 #include "attitude_estimate.h"
 #include <stdio.h>
-		
+#include <math.h>
 
 	
 
@@ -60,13 +59,15 @@ void get_sensors_data(sd* sdata, sc* calib_data)
 	u8 axis = 0;
 	float smooth_factor = 1.5;
 	static float acc_filtered[3] = {0,0,1};
+	static u16 rc_p[4] = {1000,1000,1000,1000};
+	int16_t diff_temp;
+	
 	//1 读取数据
 	i2c_mpu6050_read_acc_s(sdata->acc);
 	i2c_mpu6050_read_gyro_s(sdata->gyro);
-	i2c_mpu6050_read_mag_s(sdata->mag); 
-	sdata->press = i2c_ms5611_calculate_s();
-	nrf_read_to_motors(sdata->rc_command);
-	//TODO:一次成功一次失败是什么鬼
+	//i2c_mpu6050_read_mag_s(sdata->mag); 
+	//sdata->press = i2c_ms5611_calculate_s();
+	
 	
 	//2 加计陀螺仪校准修正
 	for(axis=0; axis<3; axis++)
@@ -81,16 +82,7 @@ void get_sensors_data(sd* sdata, sc* calib_data)
 		acc_filtered[axis] += sdata->acc[axis]/smooth_factor;
 		sdata->acc[axis] = acc_filtered[axis];
 	}
-	//4 遥控器舵量修正
-	for(axis=0; axis<4; axis++)
-	{
-		if((calib_data->rc_calib[axis]>50 || calib_data->rc_calib[axis]<-50) && axis!=2)
-			sdata->rc_command[axis] = 1000;//校准数据出错，三轴舵量全部归中
-	  else if((calib_data->rc_calib[axis]>50 || calib_data->rc_calib[axis]<-50) && axis==2)
-			sdata->rc_command[axis] = 0;//校准数据出错，油门位置最低
-		else
-		  sdata->rc_command[axis] -= calib_data->rc_calib[axis];
-	}
+
 	return;
 }
 
@@ -103,7 +95,7 @@ void get_sensors_data(sd* sdata, sc* calib_data)
  *
  * 名称：sensors_calibration
  *
- * 描述：传感器数据校准
+ * 描述：传感器数据地面校准
  *
  */ 
 void sensors_calibration(sc* s_calib, sd* s_data)
@@ -135,33 +127,37 @@ void sensors_calibration(sc* s_calib, sd* s_data)
 
 	
 	//遥控器数据校准
-	for(axis=0; axis<4; axis++)//为了节省变量，直接使用axis
+	s_calib->rc_calib[axis] = 0;
+	calib_flag = 0;
+	//10次遥控器数据取平均值作为偏移量
+	for(;calib_flag<50;)
 	{
-		s_calib->rc_calib[axis] = 0;
-		calib_flag = 0;
-		//10次遥控器数据取平均值作为偏移量
-		for(;calib_flag<50;)
-		{
-			nrf_read_to_motors(s_data->motor);
-			if(s_data->motor[axis]<1100 && s_data->motor[axis]>900)//遥控数据正常
+		nrf_read_to_motors(s_data->motor);//读取四个摇杆舵量
+		for(axis=0; axis<4; axis++)//为了节省变量，直接使用axis
 			{
-				rc_sum[axis] += s_data->motor[axis]-1000;
-			  calib_flag++;
+				if(s_data->motor[axis]<1100 && s_data->motor[axis]>900)//遥控数据正常
+				{
+					rc_sum[axis] += s_data->motor[axis]-1000;
+					calib_flag++;
+				}
+				else 
+				{
+			/*
+			s_calib->rc_calib[0] = 100; //接收数据出错，超过阈值退出
+			s_calib->rc_calib[1] = 100; 
+			s_calib->rc_calib[2] = 100; 
+			s_calib->rc_calib[3] = 100; 
+			return;*/
+				}
 			}
-			else 
-			{
-				/*
-				s_calib->rc_calib[0] = 100; //接收数据出错，超过阈值退出
-				s_calib->rc_calib[1] = 100; 
-				s_calib->rc_calib[2] = 100; 
-				s_calib->rc_calib[3] = 100; 
-			  return;*/
-			}
-		}
+	}
+	
+	//取平均值
+	for(axis=0; axis<4; axis++)
+	{
 		s_calib->rc_calib[axis] = rc_sum[axis]/(calib_flag);
 		//后续添加：如果少于一定次数，校准失败
 	}
-	
 }
 
 
@@ -208,10 +204,10 @@ void nrf_read_to_motors(u16* rc_command)
 
 
     //printf("\r\n 从机端接收到遥控器杆量数据：\n");
-	  printf("R--ail: %d%s", rc_command[0], "   \n");
-	  printf("L--ele: %d%s", rc_command[1], "   \n");
-	  printf("R--thr: %d%s", rc_command[2], "   \n");
-	  printf("L--rud: %d%s", rc_command[3], "   \n");		
+	  //printf("R--ail: %d%s", rc_command[0], "   \n");
+	  //printf("L--ele: %d%s", rc_command[1], "   \n");
+	  //printf("R--thr: %d%s", rc_command[2], "   \n");
+	  //printf("L--rud: %d%s", rc_command[3], "   \n");		
 		//printf("数据接收失败，请检查线路连接...\n");
 } 
 
@@ -243,6 +239,54 @@ void delay_approx(u16 time_to_delay)
 
 
 
+
+
+
+
+
+/**
+ *
+ *  名称： compute_rc
+ *
+ *  描述： 计算遥控器舵量值
+ *
+ */
+void compute_rc(sd* sdata, sc* calib_data)
+{
+	u8 chan = 0;
+	int16_t diff_temp = 0;
+	static u16 rc_p[4] = {1000,1000,1000,1000};
+	
+	//1 读取数据
+	nrf_read_to_motors(sdata->rc_command);
+	
+	//2 遥控器舵量修正
+	for(chan=0; chan<4; chan++)
+	{
+		if((calib_data->rc_calib[chan]>50 || calib_data->rc_calib[chan]<-50) && chan!=2)
+			sdata->rc_command[chan] = 1000;//校准数据出错，三轴舵量全部归中
+	  else if((calib_data->rc_calib[chan]>50 || calib_data->rc_calib[chan]<-50) && chan==2)
+			sdata->rc_command[chan] = 0;//校准数据出错，油门位置最低
+		else
+		  sdata->rc_command[chan] -= calib_data->rc_calib[chan];
+		
+		
+		diff_temp = rc_p[chan]-sdata->rc_command[chan];
+		/*//3 计算相邻两次的舵量差值，防止出现尖峰
+		if(diff_temp > 300 || diff_temp < -300)
+			sdata->rc_command[chan] = rc_p[chan];
+		else
+			rc_p[chan] = sdata->rc_command[chan];
+		// 如果相邻两次舵量数据差超过200，则用之前一次的舵量*/
+	}
+	
+    //printf("\r\n 从机端接收到遥控器杆量数据：\n");
+	  /*printf("R--ail: %d%s", sdata->rc_command[0], "   \n");
+	  printf("L--ele: %d%s", sdata->rc_command[1], "   \n");
+	  printf("R--thr: %d%s", sdata->rc_command[2], "   \n");
+	  printf("L--rud: %d%s", sdata->rc_command[3], "   \n");	*/	
+		//printf("数据接收失败，请检查线路连接...\n");
+}
 
 
 

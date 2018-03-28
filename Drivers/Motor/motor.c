@@ -208,10 +208,10 @@ void mix_table(int16_t* output, sd* s_data)//struct²»ÄÜÊ¡ÂÔ
 			  else;
 			}
 			
-	 printf("1st : %d   \n", s_data->motor[0]);
+	 /*printf("1st : %d   \n", s_data->motor[0]);
 	 printf("2nd : %d   \n", s_data->motor[1]);
 	 printf("3rd : %d   \n", s_data->motor[2]);
-	 printf("4th : %d   \n", s_data->motor[3]);
+	 printf("4th : %d   \n", s_data->motor[3]);*/
 	 
 }
  

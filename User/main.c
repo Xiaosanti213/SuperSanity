@@ -21,7 +21,7 @@
 
 
 
-
+extern __IO u32 current_time_us;
 
 int main()
 {
@@ -33,28 +33,48 @@ int main()
 	ad attitude_data;
 	float reference[4];
 	
-	// 测试定时器输出计数值
-	systick_init();  
-  
-  SysTick->CTRL |=  SysTick_CTRL_ENABLE_Msk;  
-  delay(10000);     
-  SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;  
+	static u32 rc_time = 0;
 	
-	
-	
-	
-	
+	//定时计数开启
+	systick_init();   
+
+	//TODO: 传感器初始化和校准会放在传感器读数当中
 	sensors_init();
-  sensors_calibration(&calib_data, &sensors_data);//一定要静止水平放置四轴，摇杆中立再上电
+  sensors_calibration(&calib_data, &sensors_data);
+	//一定要静止水平放置四轴，摇杆中立再上电，否则可能校准失败
+	
 	while(1)
 	{
+		//1 RC时间控制,超出20ms则读取遥控器数据
+		if(current_time_us > rc_time)
+		{
+			//1.1 时间控制50Hz
+			rc_time = current_time_us+20000;
+			
+			//1.2 舵量读取，并用校准值修正
+			compute_rc(&sensors_data, &calib_data);
+
+			//1.3 TODO:添加四次读取平滑滤波
+			
+			//1.4 解锁条件检查
+			go_arm_check(sensors_data.rc_command);//解锁之前不应有输出，亦不应有舵量
+		}
+		//2 未达到20ms，读取传感器
+		else
+		{
+			//2.1 参考MWC：读取其他传感器
+		}
+		//3 读取数据，姿态解算
 		get_sensors_data(&sensors_data, &calib_data);
 		attitude_estimate(&attitude_data, &sensors_data);
+		
+		
+		//4 PID控制
 		set_reference(sensors_data.rc_command, reference); //摇杆舵量数据转化为控制参考
 		attitude_control(attitude_data, reference, output);
 		
+		//5 输出电机
 		mix_table(output, &sensors_data); 
-		go_arm_check(sensors_data.rc_command);//解锁之前不应有输出，亦不应有舵量
 		write_mini_motors(sensors_data.motor);
 	}
 

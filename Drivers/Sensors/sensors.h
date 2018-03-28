@@ -40,7 +40,7 @@ void go_disarm(void);
 void nrf_read_to_motors(u16* rc_command);
 void sensors_calibration(sc* s_calib, sd* s_data);
 void delay_approx(u16);
-
+void compute_rc(sd* , sc*);
 
 
 #endif

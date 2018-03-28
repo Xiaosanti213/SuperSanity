@@ -17,8 +17,8 @@
  void delay(__IO u32 nCount);
  void systick_init(void);
  void current_time_count(void);
- void delay_us(u32 i);
-	
+ void delay_4us(void);
+ void delay_1us(void);
  
  
  #endif
