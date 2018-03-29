@@ -62,9 +62,9 @@ int main()
 		//2 未达到20ms，读取传感器
 		else
 		{
-			//2.1 参考MWC：读取其他传感器
+			//2.1 参考MWC：读取其他传感器，如GPS等
 		}
-		//3 读取数据，姿态解算
+		//3 读取数据，将校准应用进去，并完成姿态解算
 		get_sensors_data(&sensors_data, &calib_data);
 		attitude_estimate(&attitude_data, &sensors_data);
 		

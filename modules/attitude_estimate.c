@@ -73,7 +73,7 @@
 	 float deltaT = 0.32;								  							//这个如果能通过计算运行循环时间解算就比较好了
 	 	 
 	 sensors_data_direction_correct(sensors_data);      //传感器方向对正
-   //printf_sensors_data_estimate(*sensors_data);       //读出正确取向传感器数据分析
+   //printf_sensors_data_estimate(*sensors_data);     //读出正确取向传感器数据分析
 	 for(; i < 3; i++)
 	 {
 	   euler_delta[i] = sensors_data->gyro[i]*deltaT;   //计算相比较上次解算的旋转欧拉角

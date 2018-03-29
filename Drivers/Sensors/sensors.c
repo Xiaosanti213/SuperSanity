@@ -65,7 +65,7 @@ void get_sensors_data(sd* sdata, sc* calib_data)
 	//1 读取数据
 	i2c_mpu6050_read_acc_s(sdata->acc);
 	i2c_mpu6050_read_gyro_s(sdata->gyro);
-	//i2c_mpu6050_read_mag_s(sdata->mag); 
+	//i2c_mpu6050_read_mag_s(sdata->mag); //此处注释罗盘与气压计
 	//sdata->press = i2c_ms5611_calculate_s();
 	
 	
