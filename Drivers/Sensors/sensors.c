@@ -30,6 +30,9 @@
  */ 
 void sensors_init(void)
 {
+	
+	tim_config(); 
+
 	debug_usart_init();						// 调试串口	
 	status_led_gpio_config();			// 指示灯LED
 	
@@ -40,7 +43,6 @@ void sensors_init(void)
 	
 	spi_nrf_init();								
 	spi_nrf_rx_mode();
-	tim_config(); 
 	
 }
 

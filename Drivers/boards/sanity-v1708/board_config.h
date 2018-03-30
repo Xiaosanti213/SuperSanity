@@ -230,8 +230,8 @@
  // 端口引脚配置
  #define						MPU6050_I2C_PORT										GPIOB
  #define						MPU6050_I2C_INT_PIN									GPIO_Pin_5
- #define						MPU6050_I2C_SCL_PIN									GPIO_Pin_7
- #define						MPU6050_I2C_SDA_PIN       					GPIO_Pin_6
+ #define						MPU6050_I2C_SCL_PIN									GPIO_Pin_6
+ #define						MPU6050_I2C_SDA_PIN       					GPIO_Pin_7
  
  
  // 初始化SPI配置结构体函数

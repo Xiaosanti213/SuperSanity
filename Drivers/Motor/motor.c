@@ -15,9 +15,9 @@
 #include <stdio.h>
 
  
-static int  arm_motors_flag = 0; //默认上锁状态
+static u8  arm_motors_flag = 0; //默认上锁状态
 static void delay_ms(u16); 
-
+static u8  ok_to_set = 0; //留一段死区，防止电机突转
 /**
  *
  * 名称: write_mini_motors
@@ -27,7 +27,13 @@ static void delay_ms(u16);
  */ 
  void write_mini_motors(u16* motor)
  {
-	 if(arm_motors_flag)
+	 u8 i = 0;
+	 for(; i<4; i++)
+	 {
+	   if(motor[i]>100)
+			 ok_to_set = 1;
+	 }
+	 if(arm_motors_flag&&ok_to_set)
 	 {
 	 	// 设置4个空心杯电机输出量
 	  TIM_SetCompare1(PWM_TIM, motor[0]);
@@ -193,13 +199,26 @@ void go_arm_check(u16* rc_command)
 void mix_table(int16_t* output, sd* s_data)//struct不能省略
  {
 	 u8 i=0;
+	 float tuning = 0.3;
 	 //#define  PIDMIX(X,Y,Z)  sd->rc_command[THROTTLE] + axis_pid[ROLL]*X + axis_pid[PITCH]*Y + axis_pid[YAW]*Z
 	 #define  PIDMIX(X,Y,Z)  output[0]*X + output[1]*Y + output[2]*Z + output[3];
+	 
+	 // 如果当前油门最低，则其他舵无效
+	 if(output[3] < 120)
+	 {
+		for(i=0; i<4; i++)
+		 {
+				s_data->motor[i] = output[3];
+		 }
+		 return;
+	 }
+	 
+	 
 	 // 对于X型四轴
-	 s_data->motor[0] = PIDMIX(-0.5,+0.5,-0.5);  //右前 1号电机 
-	 s_data->motor[1] = PIDMIX(+0.5,+0.5,+0.5);  //左前 2号电机
-	 s_data->motor[2] = PIDMIX(+0.5,-0.5,-0.5);  //左后 3号电机
-	 s_data->motor[3] = PIDMIX(-0.5,-0.5,+0.5);  //右后 4号电机
+	 s_data->motor[0] = PIDMIX(-tuning,+tuning,-tuning);  //右前 1号电机 
+	 s_data->motor[1] = PIDMIX(+tuning,+tuning,+tuning);  //左前 2号电机
+	 s_data->motor[2] = PIDMIX(+tuning,-tuning,-tuning);  //左后 3号电机
+	 s_data->motor[3] = PIDMIX(-tuning,-tuning,+tuning);  //右后 4号电机
 	 
 	 for(i = 0; i<4; i++)
 			{
@@ -208,11 +227,11 @@ void mix_table(int16_t* output, sd* s_data)//struct不能省略
 			  else;
 			}
 			
-	 printf("1st : %d   \n", s_data->motor[0]);
+	 /*printf("1st : %d   \n", s_data->motor[0]);
 	 printf("2nd : %d   \n", s_data->motor[1]);
 	 printf("3rd : %d   \n", s_data->motor[2]);
 	 printf("4th : %d   \n", s_data->motor[3]);
-	 
+	 */
 }
  
  
