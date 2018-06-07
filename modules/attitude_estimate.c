@@ -15,13 +15,16 @@
  
  
  static void sensors_data_direction_correct(sd*);
- static void euler_to_rotmatrix(const float* euler_delta, float rot_matrix[3][3]);
- static void matrix_multiply(const float mat[3][3], const float* vec1, float* vec2); 
+ //static void euler_to_rotmatrix(const float* euler_delta, float rot_matrix[3][3]);
+ //static void matrix_multiply(const float mat[3][3], const float* vec1, float* vec2); 
+ static void matrix_multiply(const float mat1[3][3], float mat2[3][3]);
+ void normalize_mat(float mat[3][3]);
  static void normalize(float*);
  static float fast_inv_sqrt(float); 
- static float dot_product(const float*, const float*);
- static void cross_product(const float* vec1, const float* vec2, float* cp);
- static void rodrigue_rotation_matrix(float* rot_axis, const float rot_angle, float rot_matrix[3][3]);
+ //static float dot_product(const float*, const float*);
+ static void cross_product(float* vec1, const float* vec2);
+ //static void rodrigue_rotation_matrix(float* rot_axis, const float rot_angle, float rot_matrix[3][3]);
+ static void rot_matrix_to_euler(float R[3][3], float* euler_angle);
  static float atan2_numerical(float y, float x);
  static float abs_c_float_version(float);
 
@@ -40,14 +43,16 @@
  void sensors_data_direction_correct(sd* sensors_data)
  {
 	 float temp;
-	 // 保证三个数据依次是XYZ轴
+	 //保证三个数据依次是XYZ轴
 	 temp = sensors_data->gyro[0];
 	 sensors_data->gyro[0] = sensors_data->gyro[1];
-	 sensors_data->gyro[1] = temp;
+	 sensors_data->gyro[1] = -temp;//TODO:后面还要修改一下控制量 
 	 
 	 temp = -sensors_data->acc[0];
 	 sensors_data->acc[0] = -sensors_data->acc[1];
 	 sensors_data->acc[1] = temp;
+	 
+	 //检查有效性
 	 return ;
  }
  
@@ -64,35 +69,75 @@
  */
  void attitude_estimate(ad* attitude_data, sd* sensors_data)
  {
-	 float euler_delta[3];						  								//三轴分别：roll pitch yaw
-	 float rot_matrix[3][3];						  						  //旋转矩阵2维数组
-	 static float att_est[3] = {0,0,1};	  	            //只初始化1次
-	 float att_gyro[3];
-	 float w_gyro2acc = 0.2;                 						//陀螺仪相对加计比值
-	 u8 i = 0;
-	 float deltaT = 0.32;								  							//这个如果能通过计算运行循环时间解算就比较好了
-	 	 
+	 //float euler_delta[3];						  							
+	 static float rot_matrix[3][3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};			//旋转矩阵2维数组，初始时刻水平静止
+	 float dissym_mat[3][3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};		  //角速度反对称矩阵+单位阵
+	 //static float att_est[3] = {0,0,1};	  	          
+	 //float att_gyro[3];
+	 //float w_gyro2acc = 0.2;                 					
+	 u8 i,j;
+	 //float deltaT = 0.32;								  						
+	 float vec_temp[3];																	//取出旋转矩阵中第三列，用于计算误差向量
+	 float Kp = 0.01;																		//加计对旋转矩阵比例补偿
+	 const float deg2rad = 0.017;
+		 
+	 // 初始化	 
 	 sensors_data_direction_correct(sensors_data);      //传感器方向对正
    //printf_sensors_data_estimate(*sensors_data);     //读出正确取向传感器数据分析
-	 for(; i < 3; i++)
+	 /*for(; i < 3; i++)
 	 {
 	   euler_delta[i] = sensors_data->gyro[i]*deltaT;   //计算相比较上次解算的旋转欧拉角
 	   attitude_data->angle_rate[i] = sensors_data->gyro[i]; 
 	 }
+	 
 	 euler_to_rotmatrix(euler_delta, rot_matrix);   		//欧拉角计算旋转矩阵
 	 matrix_multiply(rot_matrix, att_est, att_gyro);		//由前一次估计结果迭代得到当前姿态矢量
 	 normalize(sensors_data->acc);				           		//加计矢量正交化
 	 
-
 	 for (i = 0; i<3; i++)
 	 {
 	   att_est[i] = (w_gyro2acc*att_gyro[i]+sensors_data->acc[i])/(1+w_gyro2acc);
 	 }
 	 attitude_data->euler_angle[0] = atan2_numerical(att_est[1],sqrt(att_est[0]*att_est[0]+att_est[2]*att_est[2]));
 	 attitude_data->euler_angle[1] = atan2_numerical(att_est[0], att_est[2]);	 
+	 */
+	 
 	 //printf("Euler   Angle (deg ): %.2f%s%.2f%s%.2f%s",attitude_data->euler_angle[0], "         ",attitude_data->euler_angle[1], "      ",attitude_data->euler_angle[2], "         \n");
 	 //printf("Angle   Rate  (dps ): %.2f%s%.2f%s%.2f%s",attitude_data->angle_rate[0], "         ",attitude_data->angle_rate[1], "      ",attitude_data->angle_rate[2], "         \n");
+	 
+	 //加计矢量校正
+   normalize(sensors_data->acc);											//k方向参考正交化
+   for (i = 0; i < 3; i++)
+	 {
+		 vec_temp[i] = rot_matrix[i][2];									//取出第三列 
+	 }
+	 cross_product(vec_temp, sensors_data->acc);	      //计算误差矢量，并将结果返回到第一个矢量当中
+   for(i = 0; i < 3; i++)
+	 {
+		 sensors_data->gyro[i] += Kp * vec_temp[i];
+		 //printf("Complemented Angle Rate:\n%.2f\n",sensors_data->gyro[i]);//调试输出经过补偿的角度
+	 }
+	 
+	 dissym_mat[0][1] = -sensors_data->gyro[2]*deg2rad;
+	 dissym_mat[0][2] = sensors_data->gyro[1]*deg2rad;
+	 dissym_mat[1][2] = -sensors_data->gyro[0]*deg2rad;
+	 for (i = 1; i < 3; i++)
+			for(j = 0; j < i; j++)
+				dissym_mat[i][j] = -dissym_mat[j][i];					//计算角速度反对称矩阵
+	 
+	 matrix_multiply(dissym_mat, rot_matrix);						//更新姿态旋转矩阵
+	 normalize_mat(rot_matrix);													//旋转矩阵列向量正交化并单位化
 
+	 // 下面由旋转矩阵计算欧拉角和三轴角速度
+	 rot_matrix_to_euler(rot_matrix, attitude_data->euler_angle);
+	 for(i = 0; i < 3; i++)
+	 {
+	   attitude_data->angle_rate[i] = sensors_data->gyro[i]; 
+	 }
+	 
+	 //printf_sensors_data_estimate(*sensors_data);
+	 //printf("Estimated Euler Angle: %.2f%s%.2f%s%.2f%s", attitude_data->euler_angle[0], "   ", attitude_data->euler_angle[1], "   ", attitude_data->euler_angle[2], "   \n");
+	 
 	 return ;
  }
  
@@ -107,6 +152,7 @@
  * 描述：欧拉角计算旋转矩阵
  *
  */
+ /*
  void euler_to_rotmatrix(const float* euler_delta, float rot_matrix[3][3])
  {
 	 float phi = DEG_TO_RAD * euler_delta[0]; //封装
@@ -127,7 +173,7 @@
 	 
 	 return;
  }
- 
+ */
  
  
  
@@ -140,17 +186,98 @@
  * 描述：矩阵乘向量
  *
  */ 
+ /*
  void matrix_multiply(const float mat[3][3], const float* vec1, float* vec2)//
 {
 	vec2[0] = mat[0][0]*vec1[0]+mat[0][1]*vec1[1]+mat[0][2]*vec1[2];
-    vec2[1] = mat[1][0]*vec1[0]+mat[1][1]*vec1[1]+mat[1][2]*vec1[2];
+  vec2[1] = mat[1][0]*vec1[0]+mat[1][1]*vec1[1]+mat[1][2]*vec1[2];
 	vec2[2] = mat[2][0]*vec1[0]+mat[2][1]*vec1[1]+mat[2][2]*vec1[2];
 	return ;
 }
+ */
  
  
  
-
+ 
+ 
+ 
+ 
+ /**
+ *
+ * 名称：matrix_multiply
+ *
+ * 描述：矩阵相乘，计算结果返回到第二个矩阵当中
+ *
+ */ 
+ void matrix_multiply(const float mat1[3][3], float mat2[3][3])
+ {
+	 float mat_temp[3][3];
+	 u8 i, j, k;
+	 for(i = 0; i < 3; i++)
+		 for(j = 0; j < 3; j++)	
+			 for(k = 0; k < 3; k++)
+			 {
+					mat_temp[i][j] += mat1[i][k]*mat2[k][j];
+			 }
+		
+		for(i = 0; i < 3; i++)
+			for(j = 0; j < 3; j++)
+			    mat2[i][j] = mat_temp[i][j];
+ }
+ 
+ 
+ 
+ 
+ 
+ /**
+ *
+ * 名称：normalize_mat
+ *
+ * 描述：矩阵三轴列向量单位正交化
+ *
+ */ 
+ void normalize_mat(float mat[3][3])
+ {
+	 // 三轴矢量彼此正交化
+	 float error = 0;
+	 u8 i,j;
+	 float vec_temp[3];
+	 for(i = 0; i < 3; i++)
+	 {
+		 error += mat[i][1]*mat[i][2];
+	 }
+	 error /= 2;
+	 
+	 for(i = 0; i < 3; i++)
+	 {
+		 mat[i][0] -= mat[i][1]*error;
+		 mat[i][1] -= mat[i][0]*error;
+	 }
+	 // 第三列由前两列叉积得到
+	 mat[0][2] = mat[1][0]*mat[2][1]-mat[2][0]*mat[1][1];
+	 mat[1][2] = mat[2][1]*mat[0][0]-mat[0][1]*mat[2][0];
+	 mat[2][2] = mat[0][0]*mat[1][1]-mat[1][0]*mat[0][1];
+	 
+	 // 三轴矢量各自单位化	 
+	 for(i = 0; i < 3; i++)
+	 {
+		 for(j = 0; j < 3; j++)
+		 {
+			 vec_temp[j] = mat[j][i];
+		 }
+		 normalize(vec_temp);//列向量单位化
+		 for(j = 0; j < 3; j++)
+		 {
+			 mat[j][i] = vec_temp[j];
+		 }
+	 }
+ }
+ 
+ 
+ 
+ 
+ 
+ 
  
  
 /**
@@ -216,6 +343,7 @@
  * 描述：两个向量计算旋转矩阵
  *
  */ 
+ /*
  void calculate_rot_matrix(float* vec1, float* vec2, float rot_matrix[3][3])
  {
 	 float rot_axis[3];
@@ -227,7 +355,7 @@
 	 rodrigue_rotation_matrix(rot_axis, rot_angle, rot_matrix);
 	 return ;										
  }
- 
+ */
  
  
  
@@ -240,6 +368,7 @@
  * 描述：两个向量点积
  *
  */ 
+ /*
  float dot_product(const float* vec1, const float* vec2)
  {
 	 u8 i;
@@ -250,7 +379,7 @@
 	 }
 	 return dp;
  }
- 
+ */
  
  
  
@@ -261,11 +390,17 @@
  * 描述：两个向量叉乘 
  *
  */ 
- void cross_product(const float* vec1, const float* vec2, float* cp)
+ void cross_product(float* vec1, const float* vec2)
  {
+	 float cp[3];
+	 u8 i;
 	 cp[0] = vec1[1]*vec2[2]-vec1[2]*vec2[1];
 	 cp[1] = vec1[2]*vec2[0]-vec1[0]*vec2[2];
 	 cp[2] = vec1[0]*vec2[1]-vec1[1]*vec2[0];
+	 for(i = 0; i < 3; i++)
+	 {
+		 vec1[i] = cp[i];		// 叉积结果返回到第一个向量当中
+	 }
 	 return ;
  }
 	 
@@ -281,7 +416,8 @@
  *
  * 描述：罗德里格旋转公式，给定旋转轴与旋转角，计算旋转矩阵
  *
- */ 
+ */
+/* 
 void rodrigue_rotation_matrix(float* rot_axis, const float rot_angle, float rot_matrix[3][3])
 {	
   // 封装
@@ -307,7 +443,7 @@ void rodrigue_rotation_matrix(float* rot_axis, const float rot_angle, float rot_
 	
 	return ;
 }
- 
+ */
  
  
  

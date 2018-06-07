@@ -26,8 +26,8 @@
  */
 void systick_init(void)
 {
-	if (SysTick_Config(SystemCoreClock / 1000000))
-	// 目标是初始化为1us产生一次中断，有待测试
+	if (SysTick_Config(SystemCoreClock / 1000))
+	// 目标是初始化为1ms产生一次中断，有待测试
 	{
 		while(1);
 		//捕获出错
@@ -76,25 +76,6 @@ void current_time_count(void)
 
 
 
-
-
-
- static void os_tick_init(void);
- 
-
- /************************************************************************************
- * 
- * 名称: os_tick_init-
- *
- * 描述: 操作系统滴答时钟初始化
- *   
- ************************************************************************************/
- 
- void os_tick_init(void)
- {
-	 //获取系统时钟频率:72 000 000Hz (计数速率)
-	 SysTick_Config(72000000uL/1000000uL);
- }
  
  
  
@@ -125,7 +106,18 @@ void current_time_count(void)
  ************************************************************************************/
  void delay_1us(void)
  {
-     delay(6);
+   //delay(6);
+	 u8 i;
+	 /*　
+	 	下面的时间是通过安富莱AX-Pro逻辑分析仪测试得到的。
+		CPU主频72MHz时，在内部Flash运行, MDK工程不优化
+		循环次数为10时，SCL频率 = 205KHz 
+		循环次数为7时，SCL频率 = 347KHz， SCL高电平时间1.5us，SCL低电平时间2.87us 
+	 	循环次数为5时，SCL频率 = 421KHz， SCL高电平时间1.25us，SCL低电平时间2.375us 
+        
+    IAR工程编译效率高，不能设置为7
+	 */
+	 for (i = 0; i < 10; i++);
  } 
  
  

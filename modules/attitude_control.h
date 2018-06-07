@@ -9,11 +9,11 @@
 
 
 
+// 声明由舵量计算得到的参考信号可以被外部调用
+extern float reference[4];
 
 
-
-
-void set_reference(const u16* rc_commands, float* reference);
+void set_reference(void);
 void attitude_control(ad attitude_data, const float* reference, int16_t* output);
 
 

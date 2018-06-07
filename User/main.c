@@ -12,70 +12,103 @@
 #include "sensors.h"
 #include <string.h>
 #include <stdio.h> 
-#include "attitude_estimate.h"
 #include "attitude_control.h"
 #include "board_config.h"
-
-
+#include "debug.h"
+#include "mpu6050.h"
+#include "nRF24L01.h"
+#include "stm32f10x_it.h"
 #include "systick.h"
+#include "api_tim.h"
+#include "IMUSO3.h"
+#include "IMU.h"
+#include "control.h"
+#include "Sys_Fun.h"
 
 
+//check executing time and period in different loop
+uint32_t start_time[2],exec_time[2];
+uint32_t real_exec_prd[2];	//us , real called period in different loop
 
-extern __IO u32 current_time_us;
+
 
 int main()
 {
 	
-	//上电之后请保证各个舵程中立
-	sd sensors_data;
-	sc calib_data;
-	int16_t output[4] = {0,0,0,0}; 
-	ad attitude_data;
-	float reference[4];
-	
-	static u32 rc_time = 0;
-	
 	//定时计数开启
-	systick_init();   
-
-	//TODO: 传感器初始化和校准会放在传感器读数当中
-	sensors_init();
-  sensors_calibration(&calib_data, &sensors_data);
-	//一定要静止水平放置四轴，摇杆中立再上电，否则可能校准失败
+	//cycleCounterInit();	    			// 本质是将usTicks初始化为72
+  SystemClock_HSE(9);
+	
+	SysTick_Config(72000L);					// 72000每隔1ms触发中断
+ 
+  
+	tim_config(); 								// 初始化电机PWM定时器 控制输出 应该上电之后立即初始化防止出现危险
+	
+	timer_nvic_configuration();	  // 配置TIM4中断
+	
+	
+	debug_usart_init();						// 调试串口	
+	status_led_gpio_config();			// 指示灯LED
+	
+  i2c_mpu6050_init_s();					// 写入配置参数
+	//i2c_mpu6050_config_mag_s();	// 配置并初始化磁罗盘	
+  //i2c_mpu6050_init_mag_s();
+  //i2c_ms5611_init_s();        // 初始化气压计
+	
+  sys_tim_init(72,1000);		  	// 定时器4初始化1ms，用于飞控主循环基准定时
+	
+	
+	spi_nrf_init();							  // 初始化数传接收机设备	
+	spi_nrf_rx_mode();						// 初始化接收模式
+	
+	
+	//ParamSetDefault();						// 载入PID参数
+	
+	
 	
 	while(1)
 	{
-		//1 RC时间控制,超出20ms则读取遥控器数据
-		if(current_time_us > rc_time)
+		
+		// crazepony控制策略
+		if(loop100HzCnt>=10)
 		{
-			//1.1 时间控制50Hz
-			rc_time = current_time_us+20000;
+			loop100HzCnt=0; //10ms一次循环
 			
-			//1.2 舵量读取，并用校准值修正
-			compute_rc(&sensors_data, &calib_data);
+			real_exec_prd[0] = micros()-start_time[0];//更新循环变量和循环时间
+			start_time[0] = micros();
+			
+			// 解算得到三轴欧拉角
+			IMUSO3Thread();
+			
+			if(imuCaliFlag)
+      {
+          if(IMU_Calibrate())//返回1 校准正常
+          {
+             imuCaliFlag=0;
+             imu.caliPass=1;
+          }
+      }
+			
+			// 内环角速率控制
+			CtrlAttiRate();
+			// 电机输出
+			CtrlMotor();
+		}
+		
+		// 读取遥控器舵量 
+		nrf_read_to_motors();
+		go_arm_check();
+		
+		if(loop50HzFlag)
+    {
+      loop50HzFlag=0; // 用标志位减少多次运算
+      real_exec_prd[1]=micros()-start_time[1];
+      start_time[1]=micros();
 
-			//1.3 TODO:添加四次读取平滑滤波
-			
-			//1.4 解锁条件检查
-			go_arm_check(sensors_data.rc_command);//解锁之前不应有输出，亦不应有舵量
+      set_reference();
+		  CtrlAttiAng();
+			// 外环控制角度
 		}
-		//2 未达到20ms，读取传感器
-		else
-		{
-			//2.1 参考MWC：读取其他传感器，如GPS等
-		}
-		//3 读取数据，将校准应用进去，并完成姿态解算
-		get_sensors_data(&sensors_data, &calib_data);
-		attitude_estimate(&attitude_data, &sensors_data);
-		
-		
-		//4 PID控制
-		set_reference(sensors_data.rc_command, reference); //摇杆舵量数据转化为控制参考
-		attitude_control(attitude_data, reference, output);
-		
-		//5 输出电机
-		mix_table(output, &sensors_data); 
-		write_mini_motors(sensors_data.motor);
 	}
 
 

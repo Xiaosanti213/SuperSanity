@@ -38,7 +38,7 @@ void spi_nrf_init(void)
 {	
 	nrf24l01_config();	// 不配置亦不传输，CE失能外设，NSS失能SPI
 	RC_SPI_NSS_HIGH_FUN();
-	printf("Checking nrf... %d\n",spi_nrf_check());
+	printf("Checking nrf... %d\n",spi_nrf_check()); // 显示数据1表示连接正常
 }
 
 
