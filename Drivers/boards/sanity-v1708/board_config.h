@@ -172,32 +172,7 @@
  
  
  
- /************************************************************************************
- * 
- * 25~28 (PB12~PB15)引脚配置
- *
- * 描述: SPI2连接TF卡
- *   
- ************************************************************************************/
- #define						TF_SPI											SPI2
  
- // 确定外设所在位置APB1，开启对应外设时钟
- #define						TF_SPI_APB1Clock_FUN							RCC_APB1PeriphClockCmd
- #define						TF_SPI_CLK										RCC_APB1Periph_SPI2
- 
- 
- // 端口引脚配置
- #define						TF_SPI_PORT										      GPIOB
- #define						TF_SPI_NSS_PIN									    GPIO_Pin_12
- #define						TF_SPI_CLK_PIN									    GPIO_Pin_13
- #define						TF_SPI_MISO_PIN									    GPIO_Pin_14
- #define						TF_SPI_MOSI_PIN   							    GPIO_Pin_15
- 
- 
- // 使能引脚输出高低电平函数
- #define  					TF_SPI_NSS_LOW_FUN()     						GPIO_ResetBits( TF_SPI_PORT, TF_SPI_NSS_PIN )
- #define  					TF_SPI_NSS_HIGH_FUN()    						GPIO_SetBits( TF_SPI_PORT, TF_SPI_NSS_PIN )
-
 
 
 
@@ -299,8 +274,6 @@
  #define						STATUS_LED1_OFF											GPIO_ResetBits(STATUS_LED_PORT, STATUS_LED_PIN)
 
 
-
-
 /************************************************************************************
  * 
  * 
@@ -314,9 +287,11 @@
   void nrf24l01_config(void);
   void usb_config(void);
   void status_led_gpio_config(void);
+	
   void ms5611_i2c_gpio_config_s(void);
 	void mpu6050_i2c_gpio_config_s(void);
-  void MotorInit(void);
+
+
 
  
  

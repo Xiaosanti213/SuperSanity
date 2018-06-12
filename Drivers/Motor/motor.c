@@ -11,47 +11,135 @@
 #include "stm32f10x_tim.h"
 #include "stm32f10x.h"
 #include "sensors.h"
-#include "IMU.h"
-#include "nRF24L01.h"
+
 #include <stdio.h>
-#include "control.h"
 
+ 
+static u8  arm_motors_flag = 0; //默认上锁状态
+static void delay_ms(u16); 
+static u8  ok_to_set = 0; //留一段死区，防止电机突转
+/**
+ *
+ * 名称: write_mini_motors
+ *
+ * 描述：空心杯电机直接设置四个电机比较寄存器的值
+ *
+ */ 
+ void write_mini_motors(u16* motor)
+ {
+	 u8 i = 0;
+	 for(; i<4; i++)
+	 {
+	   if(motor[i]>100)//如果有一个电机舵量超过100 就可以解锁
+			 ok_to_set = 1;
+	 }
+	 if(arm_motors_flag&&ok_to_set)
+	 {
+	 	// 设置4个空心杯电机输出量
+	  TIM_SetCompare1(PWM_TIM, motor[0]);
+	  TIM_SetCompare2(PWM_TIM, motor[1]);
+	  TIM_SetCompare3(PWM_TIM, motor[2]);
+		TIM_SetCompare4(PWM_TIM, motor[3]);
+	 }
+	 else//强制输出0
+	 {
+		TIM_SetCompare1(PWM_TIM, 0);
+	  TIM_SetCompare2(PWM_TIM, 0);
+	  TIM_SetCompare3(PWM_TIM, 0);
+		TIM_SetCompare4(PWM_TIM, 0);
+	 }
 
-#define CONSTRAIN(x,min,max) {if(x<min) x=min; if(x>max) x=max;}
-
-#define YAW_DB	 70 //偏航死区长度
-#define PR_DB		 50 //俯仰滚转死区长度
-
-
-float reference[4] = {0,0,0,0};
-int16_t rccommand[4] = {500, 500, 500, 500};
-u8 arm_motors_flag = 0; //默认上锁状态
-
-
-
+ }
+ 
+ 
+ 
+ /**
+ *
+ * 名称: write_motors
+ *
+ * 描述：电机直接设置四个电机比较寄存器的值
+ *
+ */ 
+ void write_motors(u16* motor)
+ {
+	 
+	  // 设置4个电机输出量
+	  TIM_SetCompare1(PWM_TIM, motor[0]);
+	  TIM_SetCompare2(PWM_TIM, motor[1]);
+	  TIM_SetCompare3(PWM_TIM, motor[2]);
+		TIM_SetCompare4(PWM_TIM, motor[3]);
+ 
+ }
+ 
+ 
+ 
+ 
+/**
+ *
+ * 名称: set_mini_motors
+ *
+ * 描述：电机初始化延时
+ *
+ */  
+ void init_recog_motors(void)
+ {
+	  u8 i = 0;
+	  u16 motor[4];
+	 for (; i < 4; i++)
+	 {
+			motor[i] = 1050;
+	 }
+	  // 初始化四个电机
+	  write_motors(motor);
+	  delay_ms(5000);//延时5s
+	 
+ }
+ 
+ 
+ 
+ /**
+ *
+ * 名称: delay_ms()
+ *
+ * 描述：电机
+ *
+ */  
+ void delay_ms(u16 ms)
+ {
+	 u16 temp = 10000;
+	 //根据主频和实验结合确定
+		for (; ms; ms--)
+	 {
+			for (; temp; temp--);
+	 }
+ }
+ 
+ 
+ 
+ 
  
  /**
  *
  * 名称: go_arm_check()
  *
- * 描述：电机解锁
+ * 描述：电机解锁怠速状态
  *
  */ 
-void go_arm_check(void)
+void go_arm_check(u16* rc_command)
 {
 	static int16_t arming_counter;
 	u16 temp;
 	// 下面通过四个舵量进行判断 舵量范围
-	// 对于空心杯电机来说，已经映射到[0-1000]
+	// 对于空心杯电机来说，已经映射到[0-2000]
 	
-	if (rccommand[2] > 15) {
+	if (rc_command[2] > 30) {
   // 前提油门位于最低点，否则直接退出
       arming_counter = 0;
       return;  
    } 
-	 temp = rccommand[3];
-	 // 取出方向舵量
-	 if (temp > 970)
+	 temp = rc_command[3];
+	 // 取出Yaw舵量
+	 if (temp > 1970)
 	 {
 			if(arming_counter < ARM_DELAY)
 			{
@@ -69,7 +157,7 @@ void go_arm_check(void)
 				// 可以输出信号
 			}
 	 }
-	 else if(temp < 15)
+	 else if(temp < 30)
 	 // 如果通讯状况不良，则舵量信号一直是0，保证ARM_MOTORS==0
 	 {
 			if(arming_counter < DISARM_DELAY)
@@ -90,67 +178,71 @@ void go_arm_check(void)
 	 }
 }
 
- 
- 
- 
- 
 
-/**
- *
- * 名称：nrf_read_to_motors
- *
- * 描述：将u8[4]接收到的数据映射到0~1000上
- *
- */
-void nrf_read_to_motors(void)
-{
-	 u8 rxbuf[8];
-	 /* 判断接收状态 收到数据 */
-	 spi_nrf_rx_packet(rxbuf);
-	
-		// 将motor值映射到了0~1000上
-		rccommand[0] = (float)(rxbuf[1]<<8 | rxbuf[0])/4096*1000 ;
-		rccommand[1] = (float)(rxbuf[3]<<8 | rxbuf[2])/4096*1000 ;
-		rccommand[2] = (float)(rxbuf[5]<<8 | rxbuf[4])/4096*1000 ;
-		rccommand[3] = (float)(rxbuf[7]<<8 | rxbuf[6])/4096*1000 ;
-		
-		/*
-    printf("\r\n 从机端接收到遥控器杆量数据：\n");
-	  printf("R--ail: %d%s", rccommand[0], "   \n");
-	  printf("L--ele: %d%s", rccommand[1], "   \n");
-	  printf("R--thr: %d%s", rccommand[2], "   \n");
-	  printf("L--rud: %d%s", rccommand[3], "   \n");		
-		*/
-		//printf("数据接收失败，请检查线路连接...\n");
-} 
 
 
 
  
-/**
+ 
+ 
+ 
+ 
+ 
+ 
+ /**
  *
- * 名称：set_reference
+ * 名称: mix_table()
  *
- * 描述：摇杆信号量转化为控制参考值
+ * 描述：将机型姿态与电机对应
  *
- */
-void set_reference(void)
-{
-
-	// 约束舵量不要超出限制
-  CONSTRAIN(rccommand[THROTTLE],0,1000);
-  CONSTRAIN(rccommand[YAW],0,1000);
-  CONSTRAIN(rccommand[PITCH],0,1000);
-  CONSTRAIN(rccommand[ROLL],0,1000);
-	
-	// 设置死区范围并映射成参考信号：三轴-500~500 油门-
-	reference[0] = Angle_Max * dbScaleLinear((rccommand[ROLL] - 500),500,PR_DB);       //1副翼2升降3油门4方向
-	reference[1] = -Angle_Max * dbScaleLinear((rccommand[PITCH] - 500),500,PR_DB);     //右打，上打为正，pitch角增大，拉杆舵量减小
-	reference[2] = YAW_RATE_MAX * dbScaleLinear((rccommand[YAW] - 500),500,YAW_DB);    //偏航速率参考幅度
-	reference[3] = rccommand[THROTTLE];        																				  //高度参考
-	
+ */ 
+void mix_table(int16_t* output, sd* s_data)//struct不能省略
+ {
+	 u8 i=0;
+	 float tuning = 1;
+	 //#define  PIDMIX(X,Y,Z)  sd->rc_command[THROTTLE] + axis_pid[ROLL]*X + axis_pid[PITCH]*Y + axis_pid[YAW]*Z
+	 #define  PIDMIX(X,Y,Z)  output[0]*X + output[1]*Y - output[2]*Z + output[3];
+	 
+	 // 如果当前油门最低，则其他舵无效
+	 if(output[3] < 120)
+	 {
+		for(i=0; i<4; i++)
+		 {
+				s_data->motor[i] = output[3];
+		 }
+		 return;
+	 }
+	 
+	 
+	 // 对于X型四轴
+	 s_data->motor[0] = PIDMIX(-tuning,+tuning,-tuning);  //右前 1号电机 
+	 s_data->motor[1] = PIDMIX(+tuning,+tuning,+tuning);  //左前 2号电机
+	 s_data->motor[2] = PIDMIX(+tuning,-tuning,-tuning);  //左后 3号电机
+	 s_data->motor[3] = PIDMIX(-tuning,-tuning,+tuning);  //右后 4号电机
+	 
+	 for(i = 0; i<4; i++)
+			{
+				if(s_data->motor[i]>2000)
+					 s_data->motor[i] = 2000;
+			  else;
+			}
+	 
+	 /*
+	 printf("1st : %d   \n", s_data->motor[0]);
+	 printf("2nd : %d   \n", s_data->motor[1]);
+	 printf("3rd : %d   \n", s_data->motor[2]);
+	 printf("4th : %d   \n", s_data->motor[3]);
+	 */
 }
-
-
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  
 

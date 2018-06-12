@@ -35,19 +35,17 @@ static uint8_t i2c_receive_data_s(u8 reg, uint8_t* byte_add, uint8_t num);
 void i2c_mpu6050_init_s(void)
 {
 		
-  mpu6050_i2c_gpio_config_s();//配置GPIO-i2c软件模拟模式
+  mpu6050_i2c_gpio_config_s();//配置GPIO软件模拟模式
 	
   i2c_mpu6050_delay_s();//上电后延时防止数据出错
 	
-	// 单字节数据发送没有精简考虑到调试方便
 	i2c_send_data_single_s(MPU6050_RA_PWR_MGMT_1, 0x00);	     																				//解除休眠状态
 	i2c_send_data_single_s(MPU6050_RA_SMPLRT_DIV , MPU6050_SMPLRT_DEV_GY1k);	    								    //陀螺仪采样率1kHz
 	i2c_send_data_single_s(MPU6050_RA_CONFIG , MPU6050_DLPF_BW_5);	  								    						//禁用外部信号同步
 	i2c_send_data_single_s(MPU6050_RA_ACCEL_CONFIG , MPU6050_ACCEL_FS_2G);	  									  	  //配置加速度计量程+-2G
 	i2c_send_data_single_s(MPU6050_RA_GYRO_CONFIG, MPU6050_GYRO_FS_2000);     												//陀螺仪设置不自检，量程+-2000deg/s
   
-	i2c_mpu6050_check_s();				//测试是否连接正常
-	
+	i2c_mpu6050_check_s();//测试是否连接正常
 }	
 
 
@@ -66,7 +64,7 @@ uint8_t i2c_mpu6050_check_s(void)
 	i2c_receive_data_s(MPU6050_RA_WHO_AM_I, &value, 1);
 	if(value == 0x68)
 	{
-		printf("MPU6050 is working...\n");
+		//printf("MPU6050 is working...\n");
 		return SUCCESS;
 	}
 	return ERROR;
@@ -84,11 +82,10 @@ uint8_t i2c_mpu6050_check_s(void)
  * 描述：读取加计数据 16348 LSB/g
  *
  */
-//void i2c_mpu6050_read_acc_s(float* acc)
-void i2c_mpu6050_read_acc_s(int16_t acc_temp[3])
+void i2c_mpu6050_read_acc_s(float* acc)
 {
 	
-	//int16_t acc_temp[3];//这个大小可以优化的
+	int16_t acc_temp[3];//这个大小可以优化的
 	u8 buffer[6];
 	i2c_receive_data_s(MPU6050_RA_ACCEL_XOUT_H, buffer, 6);//读取加计数据首地址
 	
@@ -96,15 +93,12 @@ void i2c_mpu6050_read_acc_s(int16_t acc_temp[3])
 	acc_temp[1] = (buffer[2]<<8) | buffer[3];
 	acc_temp[2] = (buffer[4]<<8) | buffer[5];
 	 
-	
-  /*
-	//为了兼容参考Crazepony改的解算程序，暂时把这块注释掉 float传参确实不经济
 	//转化成g单位
 	acc[0] = (float)acc_temp[0] * 2 / 32768;
 	acc[1] = (float)acc_temp[1] * 2 / 32768;
 	acc[2] = (float)acc_temp[2] * 2 / 32768;
 	//printf("MPU6050 Accel ( g  ): %.2f%s%.2f%s%.2f%s", acc[0], "   ", acc[1], "   ", acc[2], "   \n");
-	*/
+	
 }
 
 
@@ -120,25 +114,21 @@ void i2c_mpu6050_read_acc_s(int16_t acc_temp[3])
  * 描述：读取陀螺仪数据 16.4LSB
  *
  */
-void i2c_mpu6050_read_gyro_s(int16_t gyro_temp[3])
+void i2c_mpu6050_read_gyro_s(float* gyro)
 {
-	//int16_t gyro_temp[3];
+	int16_t gyro_temp[3];
 	uint8_t buffer[6];
 	i2c_receive_data_s(MPU6050_RA_GYRO_XOUT_H, buffer, 6);//读取陀螺仪数据首地址
 	
 	gyro_temp[0] = (buffer[0]<<8) | buffer[1];
 	gyro_temp[1] = (buffer[2]<<8) | buffer[3];
 	gyro_temp[2] = (buffer[4]<<8) | buffer[5];
-	
-	
-	
-  /*
-  //为了兼容按照Crazepony改的程序，此处注释掉	
+		 
 	//转化成dps单位
 	gyro[0] = (float)gyro_temp[0] * 2000/ 32768;
 	gyro[1] = (float)gyro_temp[1] * 2000/ 32768;
 	gyro[2] = (float)gyro_temp[2] * 2000/ 32768;
-	*/
+	
 	//printf("MPU6050 Gyro  (dps ): %.2f%s%.2f%s%.2f%s", gyro[0], "   ", gyro[1], "    ", gyro[2], "      \n");
 	
 }
@@ -447,7 +437,6 @@ uint8_t i2c_send_data_s(uint8_t reg, uint8_t* buffer, u8 num)
  * 名称: i2c_receive_data_s
  *
  * 描述：Burst Read Sequence 多字节接收模式
- *       当前把函数精简了许多，考虑到在大循环中影响循环时间
  *
  */
 

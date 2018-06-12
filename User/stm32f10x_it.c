@@ -25,13 +25,6 @@
 #include "stm32f10x_it.h"
 
 
-// cycles per microsecond
-static volatile uint32_t usTicks = 72;
-// current uptime for 1kHz systick timer. will rollover after 49 days. hopefully we won't care.
-volatile uint32_t sysTickUptime = 0;
-
-
-
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
   */
@@ -140,84 +133,16 @@ void PendSV_Handler(void)
 {
 }
 
-
-
-
-/***************** 参考Crazepony修改 *******************/
-/*
-void cycleCounterInit(void)
-{
-   RCC_ClocksTypeDef clocks;
-   RCC_GetClocksFreq(&clocks);
-   usTicks = clocks.SYSCLK_Frequency / 1000000;
-	 // 函数本质就是初始化usTicks变量为72
-}
-*/
-
-
 /**
   * @brief  This function handles SysTick Handler.
   * @param  None
   * @retval None
   */
-// SysTick
 void SysTick_Handler(void)
 {
-    sysTickUptime++;
+    current_time_count();
+	//定义于systick.h文件当中
 }
-
-
-
-
-// 延时若干ms
-void delay_ms(uint16_t nms)
-{
-    uint32_t t0=micros();
-    while(micros() - t0 < nms * 1000);
-
-}
-
-
-
-
-// 延时若干us
-void delay_us(u32 nus)
-{
-		uint32_t t0=micros();
-		while(micros() - t0 < nus);
-			
-}
-
-
-
-
-// Return system uptime in microseconds (rollover in 70 minutes)
-uint32_t micros(void)
-{
-    register uint32_t ms, cycle_cnt;
-    do {
-        ms = sysTickUptime;
-        cycle_cnt = SysTick->VAL; //us部分
-    } while (ms != sysTickUptime);
-    return (ms * 1000) + (usTicks * 1000 - cycle_cnt) / usTicks;
-}
-
-
-
-
-
-// Return system uptime in milliseconds (rollover in 49 days)
-uint32_t millis(void)
-{
-    return sysTickUptime;
-}
-
-
-
-
-
-
-
 
 /******************************************************************************/
 /*                 STM32F10x Peripherals Interrupt Handlers                   */

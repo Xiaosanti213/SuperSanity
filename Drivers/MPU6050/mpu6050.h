@@ -416,8 +416,8 @@ void i2c_mpu6050_read_temp(float* temp);
 void i2c_mpu6050_init_s(void);
 uint8_t i2c_mpu6050_check_s(void);
 
-void i2c_mpu6050_read_acc_s(int16_t acc_temp[3]);
-void i2c_mpu6050_read_gyro_s(int16_t gyro_temp[3]);
+void i2c_mpu6050_read_acc_s(float* acc);
+void i2c_mpu6050_read_gyro_s(float* gyro);
 void i2c_mpu6050_read_temp_s(float* temp);
 
 
