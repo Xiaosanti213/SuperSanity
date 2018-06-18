@@ -45,6 +45,15 @@ void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 
+	 
+//void cycleCounterInit(void);
+uint32_t micros(void);
+uint32_t millis(void);
+void delay_ms(uint16_t nms);
+void delay_us(u32 nus);
+
+
+
 #ifdef __cplusplus
 }
 #endif

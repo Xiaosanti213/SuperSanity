@@ -37,10 +37,10 @@ void i2c_ms5611_init_s(void)
 {
 	//ms5611_config();																	//ms5611引脚和片上外设配置
 	ms5611_i2c_gpio_config_s();
-  delay_approx(1000); 														  	//ms5611上电延时
+  delay_approx(1000);	 														  	
 	
 	i2c_ms5611_send_cmd_s(MS5611_RESET);	    					//写入传感器复位指令
-  delay_approx(1000); 
+  delay_approx(1000);	 
 }
 
 
@@ -260,3 +260,24 @@ uint8_t i2c_ms5611_receive_data_s(uint8_t* buffer, uint8_t num)
 
 
 
+
+
+
+/**
+ *
+ *  名称: delay_approx
+ *
+ *  描述: 粗略延时
+ *
+ */
+void delay_approx(u16 time_to_delay)
+{
+	uint16_t i=0,j=0;
+  for(i=0; i < time_to_delay; i++)
+  {
+    for(j=0; j < time_to_delay; j++)
+    {
+      ;
+    }
+  }
+}

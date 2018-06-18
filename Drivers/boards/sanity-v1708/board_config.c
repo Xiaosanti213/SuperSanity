@@ -33,8 +33,6 @@
 #include "stm32f10x_spi.h"
  
  
- 
- 
 /************************************************************************************
  * 
  * 名称: gpio_clk_config
@@ -57,7 +55,7 @@
  * 
  * 名称: pwm_tim_gpio_config
  *
- * 描述: 配置TIM2对应的PA0~PA3引脚
+ * 描述: 为四路电机输出配置TIM2对应的PA0~PA3引脚
  *   
  ************************************************************************************/
 
@@ -73,7 +71,7 @@
 	
 	// 复用推挽输出
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
 	
 	GPIO_InitStructure.GPIO_Pin = PWM1_TIM_PIN;
 	GPIO_Init(PWM_TIM_PORT, &GPIO_InitStructure);
@@ -128,15 +126,16 @@
 	// 使能时钟
 	PWM_TIM_APB1Clock_FUN(PWM_TIM_CLK, ENABLE);
 	
-	
+	// 复位定时器
+  TIM_DeInit(TIM2);
 	// 不分频 PCLK1 = 72MHz
 	TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	// 向下计数
 	TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	// 定时器周期（影子寄存器ARR的值）和下面的时钟构成周期
-	TIM_TimeBaseInitStructure.TIM_Period = (2400-1);
+	TIM_TimeBaseInitStructure.TIM_Period = (1000-1);
 	// 定时器预分频的值, 配置驱动周期1us，计数一个数时间1/(TIMxCLK/(psc+1)) 20ms
-	TIM_TimeBaseInitStructure.TIM_Prescaler = (72-1);
+	TIM_TimeBaseInitStructure.TIM_Prescaler = 72-1;
 	// TIM_RepetitionCounter只存在与高级定时器当中, 无需设置重复计数器的值
 	TIM_TimeBaseInitStructure.TIM_RepetitionCounter=0;	
 	TIM_TimeBaseInit(PWM_TIM, &TIM_TimeBaseInitStructure);
@@ -149,6 +148,7 @@
 	TIM_OCBaseInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
 	// 使能输出
 	TIM_OCBaseInitStructure.TIM_OutputState = TIM_OutputState_Enable ;
+	TIM_OCBaseInitStructure.TIM_Pulse = 0;    //0
 	// 设置初始PWM脉冲宽度0
 	TIM_OCBaseInitStructure.TIM_OCPolarity = TIM_OCPolarity_High ;
 	// 定时器计数值小于CCR_Val时有效电平为低电平
@@ -180,7 +180,54 @@
 
 
 
-
+void MotorInit(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+    TIM_OCInitTypeDef  TIM_OCInitStructure;
+    uint16_t PrescalerValue = 0;    
+    
+    
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE); 
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 ,ENABLE);   
+    
+    
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    
+    
+    TIM_DeInit(TIM2);
+    
+    PrescalerValue = (uint16_t) (SystemCoreClock / 24000000) - 1;
+    
+    TIM_TimeBaseStructure.TIM_Period = 999;		            
+    TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;	
+    TIM_TimeBaseStructure.TIM_ClockDivision = 0;	
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up; 
+    
+    TIM_TimeBaseInit(TIM2,&TIM_TimeBaseStructure);
+    
+    
+    TIM_OCStructInit(&TIM_OCInitStructure);
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_Pulse = 0;    //0
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    
+    TIM_OC1Init(TIM2,&TIM_OCInitStructure);
+    TIM_OC2Init(TIM2,&TIM_OCInitStructure);
+    TIM_OC3Init(TIM2,&TIM_OCInitStructure);
+    TIM_OC4Init(TIM2,&TIM_OCInitStructure);
+    
+    TIM_OC1PreloadConfig(TIM2, TIM_OCPreload_Enable);
+    TIM_OC2PreloadConfig(TIM2, TIM_OCPreload_Enable);
+    TIM_OC3PreloadConfig(TIM2, TIM_OCPreload_Enable);
+    TIM_OC4PreloadConfig(TIM2, TIM_OCPreload_Enable);
+    
+    TIM_Cmd(TIM2,ENABLE);
+}
 
 
 /************************************************************************************
@@ -310,6 +357,92 @@
  
  }
  
+ 
+ 
+ 
+ 
+ /************************************************************************************
+ * 
+ * 名称: tf_spi_gpio_config
+ *
+ * 描述: 配置gpio对应的PB12~PB15引脚           
+ *   
+ ************************************************************************************/
+
+ static void tf_spi_gpio_config(void)
+{
+	
+	// 配置GPIO初始化结构体
+	GPIO_InitTypeDef GPIO_InitStructure;
+		
+	// 开启端口外设与复用IO外设时钟，并没有封装
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE); 
+	// 开启外设时钟
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE); 
+
+	
+
+	// 复用推挽输出
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	
+	
+		
+	// NSS引脚配置成普通输出模式
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_InitStructure.GPIO_Pin = TF_SPI_NSS_PIN;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	//RC_SPI_NSS_HIGH_FUN();
+
+}
+
+
+
+
+
+/************************************************************************************
+ * 
+ * 名称: tf_spi_config
+ *
+ * 描述: 配置TF卡模块的spi通信
+ *   
+ ************************************************************************************/
+
+ static void tf_spi_config(void)
+{
+	
+	// 配置SPI初始化结构体
+	SPI_InitTypeDef   TF_SPI_InitStructure;
+	
+	// 使能时钟
+	TF_SPI_APB1Clock_FUN(RC_SPI_CLK, ENABLE);
+	
+	// 8分频，时钟9M，可以调节
+	TF_SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_8;
+	// SCK信号线第一个上升沿采集数据
+	TF_SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
+	// SCK信号线空闲状态低电平
+	TF_SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+	// CRC校验多项式
+	TF_SPI_InitStructure.SPI_CRCPolynomial = 7;
+	// SPI通讯数据帧大小
+	TF_SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b ;
+	// 双线全双工工作模式
+	TF_SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex ;
+	// 高位先行
+	TF_SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB ;
+	// 芯片主机模式
+	TF_SPI_InitStructure.SPI_Mode = SPI_Mode_Master ;
+	TF_SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+
+	SPI_Init(RC_SPI, &TF_SPI_InitStructure);
+	// 使能SPI2外设
+	SPI_Cmd(TF_SPI, ENABLE);
+
+}
  
  
  
@@ -461,7 +594,6 @@
 
  
  
- 
  /************************************************************************************
  * 
  * 初始化函数封装
@@ -482,16 +614,19 @@
 	 rc_spi_config();
  }
  
-
+ void tf_config(void)
+ {
+	 tf_spi_gpio_config();
+	 tf_spi_config();
+ }
+ 
  void usb_config(void)
  {
 	 debug_usart_gpio_config();
 	 debug_usart_config();
  }
 	 
- 
- 
- 
+
  
  
  

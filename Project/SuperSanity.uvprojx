@@ -455,6 +455,11 @@
               <FileType>1</FileType>
               <FilePath>..\Libraries\STM32F10x_StdPeriph_Driver\src\stm32f10x_usart.c</FilePath>
             </File>
+            <File>
+              <FileName>misc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Libraries\STM32F10x_StdPeriph_Driver\src\misc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -469,6 +474,11 @@
               <FileName>stm32f10x_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\stm32f10x_it.c</FilePath>
+            </File>
+            <File>
+              <FileName>Sys_Fun.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\User\Sys_Fun.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -516,11 +526,6 @@
               <FilePath>..\Drivers\boards\api\api_spi.c</FilePath>
             </File>
             <File>
-              <FileName>sensors.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Drivers\Sensors\sensors.c</FilePath>
-            </File>
-            <File>
               <FileName>api_i2c.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Drivers\boards\api\api_i2c.c</FilePath>
@@ -541,9 +546,9 @@
               <FilePath>..\Drivers\MPU6050\mpu6050_s.c</FilePath>
             </File>
             <File>
-              <FileName>systick.c</FileName>
+              <FileName>api_tim.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Drivers\SysTick\systick.c</FilePath>
+              <FilePath>..\Drivers\boards\api\api_tim.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -551,14 +556,24 @@
           <GroupName>modules</GroupName>
           <Files>
             <File>
-              <FileName>attitude_control.c</FileName>
+              <FileName>control.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\modules\attitude_control.c</FilePath>
+              <FilePath>..\modules\control.c</FilePath>
             </File>
             <File>
-              <FileName>attitude_estimate.c</FileName>
+              <FileName>filter.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\modules\attitude_estimate.c</FilePath>
+              <FilePath>..\modules\filter.c</FilePath>
+            </File>
+            <File>
+              <FileName>IMU.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\modules\IMU.c</FilePath>
+            </File>
+            <File>
+              <FileName>IMUSO3.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\modules\IMUSO3.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -26,7 +26,7 @@ typedef struct sensors_calib
 {
 	float acc_calib[3];
 	float gyro_calib[3];
-  float	rc_calib[4]; 
+  float	rc_calib[4]; //油门校准数据始终为0
 }sc; 
 
 
@@ -37,10 +37,17 @@ void sensors_init(void);
 void get_sensors_data(sd*, sc*);
 void init_recog_motors(void);
 void go_disarm(void);
-void nrf_read_to_motors(u16* rc_command);
-void sensors_calibration(sc* s_calib, sd* s_data);
+void nrf_read_to_motors(void);
+void sensors_calibration(sc* s_calib, sd*);
 void delay_approx(u16);
 void compute_rc(sd* , sc*);
+
+
+// 声明外部调用
+extern int16_t rccommand[4];
+
+
+
 
 
 #endif
